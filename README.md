@@ -75,7 +75,7 @@ git --version
  ```bash
  python.exe -m pip install --upgrade pip                                  
  ```
-6. Ejecutar la aplicación de streamlit .
+6. Ejecutar la aplicación de streamlit.
 
  ```bash
  streamlit run main.py                             
