@@ -158,4 +158,3 @@ ON warehouse.fact_ventas(id_cliente);
 
 CREATE INDEX idx_fact_ventas_variante
 ON warehouse.fact_ventas(id_variante);
-
