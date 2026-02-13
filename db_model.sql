@@ -1,5 +1,3 @@
-
-
 CREATE SCHEMA IF NOT EXISTS raw;
 CREATE SCHEMA IF NOT EXISTS warehouse;
 
@@ -26,7 +24,6 @@ CREATE TABLE raw.inventario_raw (
     talla VARCHAR(10),
     color VARCHAR(50),
     stock_actual INTEGER,
-    stock_minimo INTEGER,
     precio_adquisicion NUMERIC(10,2),
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -143,7 +140,6 @@ CREATE TABLE warehouse.fact_ventas (
 CREATE TABLE warehouse.fact_inventario (
     id_variante INTEGER PRIMARY KEY,
     stock_actual INTEGER NOT NULL,
-    stock_minimo INTEGER NOT NULL,
 
     CONSTRAINT fk_variante_inventario
         FOREIGN KEY (id_variante)
