@@ -46,13 +46,13 @@ def extract_sales_data(text_input: str):
         - nombre_cliente: string (Nombre del cliente o "Anónimo")
         - ubicacion_cliente: string (Ciudad/Distrito inferido o "Desconocido")
         - genero: string (M/F/U, inferido según el producto o cliente)
-        - canal_preferido: string (WhatsApp, Tienda, Web, etc., inferido o "Presencial")
+        - medio_pago: string (Efectivo, Yape, Plin, Transferencia, Tarjeta, etc. Inferido o "Efectivo")
         - fecha_registro: string (YYYY-MM-DD, hoy es {current_date})
 
         Ejemplo de salida:
         [
-            {{"producto": "Polo Rojo", "categoria": "Ropa", "cantidad": 2, "talla": "M", "color": "Rojo", "precio": 50.0, "nombre_cliente": "Juan", "ubicacion_cliente": "Lima", "genero": "M", "canal_preferido": "Presencial", "fecha_registro": "{current_date}"}},
-            {{"producto": "Laptop", "categoria": "Tecnología", "cantidad": 1, "talla": null, "color": "Gris", "precio": 1500.0, "nombre_cliente": "Maria", "ubicacion_cliente": "Arequipa", "genero": "F", "canal_preferido": "Web", "fecha_registro": "{current_date}"}}
+            {{"producto": "Polo Rojo", "categoria": "Ropa", "cantidad": 2, "talla": "M", "color": "Rojo", "precio": 50.0, "nombre_cliente": "Juan", "ubicacion_cliente": "Lima", "genero": "M", "medio_pago": "Yape", "fecha_registro": "{current_date}"}},
+            {{"producto": "Laptop", "categoria": "Tecnología", "cantidad": 1, "talla": null, "color": "Gris", "precio": 1500.0, "nombre_cliente": "Maria", "ubicacion_cliente": "Arequipa", "genero": "F", "medio_pago": "Tarjeta", "fecha_registro": "{current_date}"}}
         ]
 
         Responde SOLO con la LISTA JSON. Sin bloques de código markdown.

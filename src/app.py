@@ -14,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 print(f"DEBUG: sys.path includes: {libs_path}")
 print(f"DEBUG: libs exists? {os.path.exists(libs_path)}")
 
-from src.utils.logger import logInfo, logSequence
+from src.utils.logger import logInfo, logSequence, logError
 from src.components.voice_input import voice_input_component
 from src.components.database_viewer import render_db_tab
 
@@ -174,7 +174,7 @@ def render_voice_agent_tab():
         column_order = [
             "estado", "visto_bueno", "producto", "categoria", "talla", "color", "cantidad", "precio", 
             "nombre_cliente", "ubicacion_cliente", "genero", 
-            "canal_preferido", "fecha_registro"
+            "medio_pago", "fecha_registro"
         ]
         
         column_config = {
@@ -189,7 +189,7 @@ def render_voice_agent_tab():
             "nombre_cliente": st.column_config.TextColumn("Cliente"),
             "ubicacion_cliente": st.column_config.TextColumn("Ubicación"),
             "genero": st.column_config.SelectboxColumn("Género", options=["M", "F", "U"]),
-            "canal_preferido": st.column_config.SelectboxColumn("Canal", options=["Presencial", "WhatsApp", "Web", "Teléfono"]),
+            "medio_pago": st.column_config.SelectboxColumn("Medio Pago", options=["Efectivo", "Yape", "Plin", "Tarjeta", "Transferencia", "Otros"]),
             "fecha_registro": st.column_config.DateColumn("Fecha", format="YYYY-MM-DD"),
         }
         
@@ -212,13 +212,51 @@ def render_voice_agent_tab():
             # Verificar si todos tienen check verde (ok_url)
             can_save = all(check_row_status(row) == ok_url for row in st.session_state.sales_data)
             
+
             if st.button("💾 Guardar Todo", disabled=not can_save, help="Solo habilitado si todas las filas están OK o tienen V.B."):
-                st.toast(f"Guardando {len(edited_df)} registros...", icon="💾")
-                logInfo(f"Guardando registros: {edited_df}")
-                st.success("¡Ventas guardadas exitosamente!")
-                st.session_state.sales_data = []
-                st.session_state.raw_voice_text = ""
-                st.rerun()
+                st.toast(f"Guardando {len(edited_df)} registros en BD...", icon="⏳")
+                
+                # Integración con Servicio de Base de Datos
+                from src.services.db_service import insert_sales_to_db
+                
+                # Convertir dataframe a lista de dicts para el servicio
+                if isinstance(edited_df, list):
+                    sales_list = edited_df
+                else:
+                    try:
+                        sales_list = edited_df.to_dict('records')
+                    except AttributeError:
+                         # Fallback for unexpected types
+                         sales_list = edited_df
+
+                result = insert_sales_to_db(sales_list)
+                
+                if result["success"]:
+                    st.success(f"✅ {result['message']}")
+                    logInfo(f"Guardado exitoso en BD: {len(sales_list)} registros.")
+                    # Limpiar estado
+                    st.session_state.sales_data = []
+                    st.session_state.raw_voice_text = ""
+                    import time
+                    time.sleep(2) # Dar tiempo a leer el mensaje
+                    st.rerun()
+                else:
+                    msg = result['message']
+                    if "permission denied" in msg:
+                        st.error("⛔ **ERROR DE PERMISOS EN BASE DE DATOS**")
+                        st.markdown("""
+                        El usuario de base de datos **no tiene permiso** para escribir en la tabla.
+                        
+                        **Solución:**
+                        Pide al administrador de la BD que ejecute esto:
+                        ```sql
+                        GRANT INSERT ON TABLE raw.ventas_raw TO "Oscar";
+                        GRANT USAGE, SELECT ON SEQUENCE raw.ventas_raw_id_venta_seq TO "Oscar";
+                        ```
+                        """)
+                    else:
+                        st.error(f"❌ Error al guardar: {msg}")
+                    logError(f"Fallo al guardar en BD: {msg}")
             
             if not can_save:
                 st.caption("⚠️ Subsanar campos vacíos o dar Visto Bueno para guardar.")
