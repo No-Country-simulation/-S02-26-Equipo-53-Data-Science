@@ -19,11 +19,12 @@ from src.components.voice_input import voice_input_component
 from src.components.database_viewer import render_db_tab
 
 
-st.set_page_config(
-    page_title="Hola Mundo Streamlit",
-    page_icon="👋",
-    layout="centered"
-)
+if __name__ == "__main__":
+    st.set_page_config(
+        page_title="Hola Mundo Streamlit",
+        page_icon="👋",
+        layout="centered"
+    )
 
 def main():
     logSequence("Iniciando aplicación", "Hola Mundo")

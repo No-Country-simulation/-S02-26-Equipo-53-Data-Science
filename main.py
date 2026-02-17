@@ -89,7 +89,8 @@ st.write(
 
 
 
-st.button("🚀 Ir a la carga de datos")
+if st.button("🚀 Ir a la carga de datos"):
+    st.switch_page("pages/01_Ingesta_Ventas.py")
 
 
 

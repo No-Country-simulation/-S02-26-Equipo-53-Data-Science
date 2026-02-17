@@ -130,3 +130,4 @@ node_modules/
 env/
 venv/
 .env/
+.agent/
