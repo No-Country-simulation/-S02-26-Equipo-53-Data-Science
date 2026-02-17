@@ -14,9 +14,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 print(f"DEBUG: sys.path includes: {libs_path}")
 print(f"DEBUG: libs exists? {os.path.exists(libs_path)}")
 
-from src.utils.logger import logInfo, logSequence, logError
-from src.components.voice_input import voice_input_component
-from src.components.database_viewer import render_db_tab
+from libs.logger import logInfo, logSequence, logError
+from .components.voice_input import voice_input_component
+from .components.database_viewer import render_db_tab
 
 
 if __name__ == "__main__":
@@ -94,7 +94,7 @@ def render_voice_agent_tab():
                 st.warning("⚠️ No hay texto para procesar. Graba o escribe algo primero.")
             else:
                 with st.spinner("Analizando múltiples ventas con IA (Gemini 2.5)..."):
-                    from src.services.extraction_service import extract_sales_data
+                    from .services.extraction_service import extract_sales_data
                     result = extract_sales_data(input_text)
                     
                     if "error" in result:
@@ -218,7 +218,7 @@ def render_voice_agent_tab():
                 st.toast(f"Guardando {len(edited_df)} registros en BD...", icon="⏳")
                 
                 # Integración con Servicio de Base de Datos
-                from src.services.db_service import insert_sales_to_db
+                from .services.db_service import insert_sales_to_db
                 
                 # Convertir dataframe a lista de dicts para el servicio
                 if isinstance(edited_df, list):

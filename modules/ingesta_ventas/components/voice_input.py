@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_mic_recorder import speech_to_text
-from src.utils.logger import logInfo, logError
+from libs.logger import logInfo, logError
 
 def voice_input_component(key="voice_input", language="es-ES"):
     """

@@ -1,27 +1,8 @@
-
 import os
-import psycopg2
 from psycopg2 import sql
-from dotenv import load_dotenv
-from src.utils.logger import logInfo, logError
 import datetime
-
-load_dotenv()
-
-def get_db_connection():
-    """Establece conexión a la base de datos usando variables de entorno."""
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            database=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASS")
-        )
-        return conn
-    except Exception as e:
-        logError(f"Error conectando a BD: {e}")
-        return None
+from libs.db_connection import get_db_connection
+from libs.logger import logInfo, logError
 
 def get_product_id(cursor, schema, product_name):
     """

@@ -1,7 +1,7 @@
 import os
 import json
 import google.generativeai as genai
-from src.utils.logger import logError, logInfo
+from libs.logger import logError, logInfo
 from dotenv import load_dotenv
 import datetime
 
