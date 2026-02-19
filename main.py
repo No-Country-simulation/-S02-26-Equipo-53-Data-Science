@@ -1,5 +1,11 @@
-
 import streamlit as st
+import sys
+import os
+
+# Add libs to sys.path to support local dependencies (psycopg2, pandas, etc.)
+libs_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libs')
+if libs_path not in sys.path:
+    sys.path.insert(0, libs_path)
 
 # ----------------------
 # config
@@ -89,7 +95,8 @@ st.write(
 
 
 
-st.button("🚀 Ir a la carga de datos")
+if st.button("🚀 Ir a la carga de datos"):
+    st.switch_page("pages/01_Ingesta_Ventas.py")
 
 
 

@@ -80,3 +80,21 @@ git --version
  ```bash
  streamlit run main.py                             
  ```
+
+## 🏗️ Arquitectura Modular
+
+Este proyecto sigue una arquitectura estricta para facilitar el trabajo en equipo:
+
+- **`main.py`**: Landing Page global.
+- **`pages/`**: Solo wrappers de Streamlit. No contienen lógica.
+- **`modules/`**: Aquí vive el código real.
+    - `modules/ingesta_ventas/`: Módulo de captura de datos por voz.
+- **`libs/`**: Código compartido (Conexión BD, Logger).
+
+Para más detalles, ver `.agent/skills/arquitectura-modular/SKILL.md`.
+
+## 🛠️ Configuración
+1. Copia `.env.example` a `.env`.
+2. Llena tus credenciales.
+3. Ejecuta `streamlit run main.py`.
+
