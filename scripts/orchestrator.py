@@ -1,6 +1,6 @@
-from src.etl.extract import fetch_raw_data
-from src.etl.transform import clean_dataframe
-from src.etl.load import upload_to_staging
+from scripts.etl.extract import fetch_raw_data
+from scripts.etl.transform import clean_dataframe
+from scripts.etl.load import upload_to_staging
 
 def run_backend_cleaning_pipeline():
     """

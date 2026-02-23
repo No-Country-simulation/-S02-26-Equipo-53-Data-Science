@@ -10,7 +10,6 @@ CREATE TABLE raw.ventas_raw (
     id_producto INTEGER,
     id_cliente INTEGER,
     cantidad INTEGER,
-    precio_venta_unitario NUMERIC(10,2),
     medio_pago VARCHAR(50),
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,6 +23,7 @@ CREATE TABLE raw.inventario_raw (
     color VARCHAR(50),
     stock_actual INTEGER,
     precio_adquisicion NUMERIC(10,2),
+    precio_venta_unitario NUMERIC(10,2),
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -46,7 +46,6 @@ CREATE TABLE staging.ventas_staging (
     id_producto INTEGER,
     id_cliente INTEGER,
     cantidad INTEGER,
-    precio_venta_unitario NUMERIC(10,2),
     medio_pago VARCHAR(50),
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -60,6 +59,7 @@ CREATE TABLE staging.inventario_staging (
     color VARCHAR(50),
     stock_actual INTEGER,
     precio_adquisicion NUMERIC(10,2),
+    precio_venta_unitario NUMERIC(10,2),
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -150,13 +150,14 @@ CREATE TABLE warehouse.fact_ventas (
 -- 📦 FACT_INVENTARIO
 -- =========================
 CREATE TABLE warehouse.fact_inventario (
-    id_producto INTEGER PRIMARY KEY,
+    id_producto INTEGER NOT NULL,
     stock_actual INTEGER NOT NULL,
+    
+    PRIMARY KEY (id_producto),
 
     FOREIGN KEY (id_producto)
         REFERENCES warehouse.dim_producto(id_producto)
 );
-
 
 
 
@@ -165,4 +166,4 @@ CREATE INDEX idx_fact_ventas_fecha
 ON warehouse.fact_ventas(id_fecha);
 
 CREATE INDEX idx_fact_ventas_cliente
-ON warehouse.fact_ventas(id_cliente);
+ON warehouse.fact_ventas(id_cliente);;

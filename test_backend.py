@@ -1,5 +1,5 @@
 # test_backend.py
-from src.services.orchestrator import run_backend_cleaning_pipeline
+from scripts.orchestrator import run_backend_cleaning_pipeline
 import os
 
 print("🚀 Iniciando prueba del Pipeline de Backend...")
