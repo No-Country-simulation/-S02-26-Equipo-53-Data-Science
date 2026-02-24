@@ -18,9 +18,21 @@ def clean_dataframe(df):
         df['fecha'] = pd.to_datetime(df['fecha'], errors='coerce')
         df['cantidad'] = pd.to_numeric(df['cantidad'], errors='coerce').fillna(1)
         df['precio_venta_unitario'] = pd.to_numeric(df['precio_venta_unitario'], errors='coerce').fillna(0.0)
-        # Limpieza de texto en medio de pago
         if 'medio_pago' in cols:
-            df['medio_pago'] = df['medio_pago'].str.strip().str.capitalize()
+            df['medio_pago'] = df['medio_pago'].str.strip().str.title()
+            # Mapeo de sinonimia para normalizar medios de pago
+            mapeo_pago = {
+                'Yape': 'Yape', 'Plin': 'Plin', 'Efectivo': 'Efectivo', 
+                'Cash': 'Efectivo', 'Tarjeta': 'Tarjeta', 'Visa': 'Tarjeta',
+                'Mastercard': 'Tarjeta', 'Transferencia': 'Transferencia'
+            }
+            # Unir con el mapeo y mantener el valor original si no hay coincidencia
+            df['medio_pago'] = df['medio_pago'].apply(lambda x: mapeo_pago.get(x, x))
+
+        # --- DETECCIÓN BÁSICA DE OUTLIERS ---
+        # Si el precio o cantidad es absurdamente alto (ej. > 10000), avisar o capear
+        if 'precio_venta_unitario' in cols:
+             df['precio_venta_unitario'] = df['precio_venta_unitario'].clip(upper=5000)
 
     # 2. LÓGICA PARA INVENTARIO
     elif 'id_producto' in cols or 'stock_actual' in cols:
@@ -30,9 +42,9 @@ def clean_dataframe(df):
         for col in ['categoria', 'talla', 'color']:
             if col in cols:
                 df[col] = df[col].astype(str).str.strip().str.upper()
-        # Validar que los stocks no sean negativos
-        df['stock_actual'] = pd.to_numeric(df['stock_actual'], errors='coerce').clip(lower=0).fillna(0)
-        df['precio_adquisicion'] = pd.to_numeric(df['precio_adquisicion'], errors='coerce').fillna(0.0)
+        # Validar que los stocks no sean negativos y capear extremos
+        df['stock_actual'] = pd.to_numeric(df['stock_actual'], errors='coerce').clip(lower=0, upper=10000).fillna(0)
+        df['precio_adquisicion'] = pd.to_numeric(df['precio_adquisicion'], errors='coerce').clip(lower=0, upper=5000).fillna(0.0)
 
     # 3. LÓGICA PARA CLIENTES
     elif 'id_cliente' in cols or 'nombre_cliente' in cols:

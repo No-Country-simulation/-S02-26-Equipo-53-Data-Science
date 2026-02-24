@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import os
 from dotenv import load_dotenv
 
@@ -17,8 +17,14 @@ def get_engine():
 def upload_to_staging(df, table_name):
     try:
         engine = get_engine()
-        # El parámetro 'schema' es clave aquí
-        df.to_sql(table_name, engine, schema='staging', if_exists='replace', index=False)
+        # Usamos una transacción para vaciar e insertar (Estrategia sugerida)
+        with engine.begin() as conn:
+            # 1. Vaciar la tabla (Truncate) - mucho más seguro que 'replace'
+            conn.execute(text(f"TRUNCATE TABLE staging.{table_name}"))
+            
+            # 2. Insertar los nuevos datos (Append)
+            df.to_sql(table_name, conn, schema='staging', if_exists='append', index=False)
+            
         print(f"✅ Datos cargados exitosamente en staging.{table_name}")
         return True
     except Exception as e:

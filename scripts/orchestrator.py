@@ -24,7 +24,14 @@ def run_backend_cleaning_pipeline():
             # 3. CARGAR (Hacia Staging)
             upload_to_staging(df_clean, staging_table)
 
-        return {"status": "success", "message": "Proceso ETL completado para todas las tablas."}
+        # 4. VALIDACIÓN DE CALIDAD (Integridad Referencial)
+        from scripts.etl.validation import validate_referential_integrity
+        success, details = validate_referential_integrity()
+        
+        if not success:
+            return {"status": "warning", "message": "ETL cargado pero con inconsistencias de datos.", "details": details}
+
+        return {"status": "success", "message": "Proceso ETL completado y validado exitosamente."}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
