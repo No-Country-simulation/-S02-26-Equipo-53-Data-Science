@@ -161,6 +161,45 @@ CREATE TABLE warehouse.fact_inventario (
 
 
 
+-- Función para descontar stock en raw
+CREATE OR REPLACE FUNCTION raw.descontar_stock()
+RETURNS TRIGGER AS $$
+DECLARE
+    stock_disponible INT;
+BEGIN
+    -- Bloquear fila de inventario para concurrencia
+    SELECT stock_actual
+    INTO stock_disponible
+    FROM raw.inventario_raw
+    WHERE id_producto = NEW.id_producto
+    FOR UPDATE;
+
+    -- Validar existencia del producto
+    IF stock_disponible IS NULL THEN
+        RAISE EXCEPTION 'Producto no existe en inventario_raw';
+    END IF;
+
+    -- Validar stock suficiente
+    IF stock_disponible < NEW.cantidad THEN
+        RAISE EXCEPTION 'Stock insuficiente en inventario_raw';
+    END IF;
+
+    -- Descontar stock
+    UPDATE raw.inventario_raw
+    SET stock_actual = stock_actual - NEW.cantidad
+    WHERE id_producto = NEW.id_producto;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_descontar_stock_raw
+BEFORE INSERT ON raw.ventas_raw
+FOR EACH ROW
+EXECUTE FUNCTION raw.descontar_stock();
+
+
+
 -- optimzacion de la busqueda por indices
 CREATE INDEX idx_fact_ventas_fecha
 ON warehouse.fact_ventas(id_fecha);
