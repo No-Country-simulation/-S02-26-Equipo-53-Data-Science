@@ -34,15 +34,12 @@ def extract_sales_data(text_input: str):
         "{text_input}"
         
         Debes devolver una LISTA JSON de objetos. Cada objeto representa una venta.
-        Si un campo no se menciona, usa null (o estimaciones lógicas basadas en el contexto).
+        Si un campo no se menciona, usa null.
+        IMPORTANTE: NO inventes ni extraigas precios, tallas ni colores por separado. Todo el nombre descriptivo debe ir en "producto_dictado".
         
         Campos por objeto:
-        - producto: string (Nombre del producto vendido)
-        - categoria: string (Categoría inferida, ej: Ropa, Tecnología, Alimentos, etc.)
+        - producto_dictado: string (Nombre literal que el usuario dictó, ej: "Polo azul talla M", "Zapatilla Nike")
         - cantidad: integer (default 1)
-        - talla: string (S, M, L, o números como 38, 42, 38.5, null si no aplica)
-        - color: string (null si no aplica)
-        - precio: float (0.0 si no se dice)
         - nombre_cliente: string (Nombre del cliente o "Anónimo")
         - ubicacion_cliente: string (Ciudad/Distrito inferido o "Desconocido")
         - genero: string (M/F/U, inferido según el producto o cliente)
@@ -51,8 +48,7 @@ def extract_sales_data(text_input: str):
 
         Ejemplo de salida:
         [
-            {{"producto": "Polo Rojo", "categoria": "Ropa", "cantidad": 2, "talla": "M", "color": "Rojo", "precio": 50.0, "nombre_cliente": "Juan", "ubicacion_cliente": "Lima", "genero": "M", "medio_pago": "Yape", "fecha_registro": "{current_date}"}},
-            {{"producto": "Laptop", "categoria": "Tecnología", "cantidad": 1, "talla": null, "color": "Gris", "precio": 1500.0, "nombre_cliente": "Maria", "ubicacion_cliente": "Arequipa", "genero": "F", "medio_pago": "Tarjeta", "fecha_registro": "{current_date}"}}
+            {{"producto_dictado": "Polo Rojo M", "cantidad": 2, "nombre_cliente": "Juan", "ubicacion_cliente": "Lima", "genero": "M", "medio_pago": "Yape", "fecha_registro": "{current_date}"}}
         ]
 
         Responde SOLO con la LISTA JSON. Sin bloques de código markdown.
@@ -74,5 +70,77 @@ def extract_sales_data(text_input: str):
         return {"data": data, "duration": duration}
 
     except Exception as e:
-        logError("Error en extracción con Gemini", e)
+        logError(f"Error en extracción con Gemini: {e}")
         return {"error": str(e), "duration": 0}
+
+def suggest_column_mapping(user_columns: list, required_columns: list) -> dict:
+    """
+    Usa Gemini para sugerir un emparejamiento entre las columnas del Excel subido 
+    y las columnas obligatorias de la tabla destino.
+    """
+    if not api_key:
+        return {}
+        
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        prompt = f"""
+        Actúa como un ingeniero de datos. Tienes dos listas de nombres de columnas.
+        
+        Columnas Requeridas en BD: {required_columns}
+        Columnas encontradas en el archivo del usuario: {user_columns}
+        
+        Empareja cada 'Columna Requerida' con la columna del usuario que semánticamente tenga más sentido.
+        Si para una Columna Requerida no hay ninguna columna del usuario que encaje, ignórala (no la incluyas en el output).
+        
+        Devuelve SOLO un JSON donde las CLAVES son los nombres exactos de las "Columnas Requeridas en BD"
+        y los VALORES son los nombres exactos de las "Columnas encontradas en el archivo del usuario".
+        
+        Ejemplo si requieres ["producto", "cantidad"] y el usuario subió ["Articulo_nombre", "cuantos_vendidos", "fecha"]:
+        {{"producto": "Articulo_nombre", "cantidad": "cuantos_vendidos"}}
+        
+        Prohibido usar markdown, solo el JSON puro.
+        """
+        response = model.generate_content(prompt)
+        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(cleaned_text)
+        return {"mapping": getattr(data, 'mapping', data)} # En caso de que devuelva root dict
+    except Exception as e:
+        logError(f"Error sugiriendo mapeo con Gemini: {e}")
+        return {"mapping": {}}
+
+def extract_product_attributes_batch(products: list) -> dict:
+    """
+    Recibe una lista de descripciones de productos (ej: "Zapatilla Urbana Blanca Talla 40")
+    y devuelve una lista de diccionarios con (nombre_limpio, talla, color) inferidos.
+    """
+    if not api_key or not products:
+        return {"data": []}
+        
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""
+        Actúa como un experto en catalogación de e-commerce. Recibirás una lista de cadenas de texto 
+        que los usuarios escriben para describir productos de ropa o calzado.
+        
+        Tu tarea es "desempaquetar" cada cadena en 3 atributos:
+        1. "producto_base": El nombre limpio del artículo (sin talla ni color). Ej: "Zapatilla Urbana Nike".
+        2. "talla": La talla encontrada (texto o número, ej: "S", "M", "L", "XL", "38", "42"). Si no hay, null.
+        3. "color": El color predominante (ej: "Blanca", "Negro", "Azul"). Si no hay, null.
+        
+        Lista de entrada:
+        {json.dumps(products, ensure_ascii=False)}
+        
+        Devuelve una lista JSON con el mismo orden exacto, donde cada objeto tenga:
+        {{"original": "cadena original", "producto_base": "...", "talla": "...", "color": "..."}}
+        
+        SOLO JSON, sin etiquetas markdown.
+        """
+        response = model.generate_content(prompt)
+        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(cleaned_text)
+        return {"data": data}
+    except Exception as e:
+        logError(f"Error desempaquetando atributos con Gemini: {e}")
+        return {"data": []}
+

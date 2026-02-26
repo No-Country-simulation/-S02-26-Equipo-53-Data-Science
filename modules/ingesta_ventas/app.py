@@ -40,12 +40,12 @@ def main():
         render_voice_agent_tab()
     
     with tab2:
-        st.header("Entrada Manual por botones")
-        st.info("Módulo en construcción: Aquí habrá botones y selectores para ingreso rápido.")
+        from .components.manual_input import render_manual_input_tab
+        render_manual_input_tab()
         
     with tab3:
-        st.header("Carga Masiva")
-        st.info("Módulo en construcción: Aquí podrás subir archivos Excel/CSV.")
+        from .components.mass_upload import render_mass_upload_tab
+        render_mass_upload_tab()
 
     with tab4:
         render_db_tab()
@@ -95,12 +95,69 @@ def render_voice_agent_tab():
             else:
                 with st.spinner("Analizando múltiples ventas con IA (Gemini 2.5)..."):
                     from .services.extraction_service import extract_sales_data
+                    from .services.db_service import search_inventory_fuzzy
                     result = extract_sales_data(input_text)
                     
                     if "error" in result:
                         st.error(f"Error: {result['error']}")
                     else:
-                        st.session_state.sales_data = result["data"]
+                        processed_sales = []
+                        for item in result["data"]:
+                            dictated = item.get("producto_dictado", "")
+                            
+                            # Intentar resolver usando DB
+                            matches = search_inventory_fuzzy(dictated, limit=5)
+                            
+                            base_sale = {
+                                "producto_dictado": dictated,
+                                "cantidad": item.get("cantidad", 1),
+                                "nombre_cliente": item.get("nombre_cliente", "Anónimo"),
+                                "ubicacion_cliente": item.get("ubicacion_cliente", "Desconocido"),
+                                "genero": item.get("genero", "U"),
+                                "medio_pago": item.get("medio_pago", "Efectivo"),
+                                "fecha_registro": item.get("fecha_registro"),
+                                "visto_bueno": False
+                            }
+                            
+                            if not matches:
+                                # No hay coincidencias en BD -> Conflicto
+                                base_sale["estado_match"] = "No Encontrado"
+                                base_sale["id_producto"] = None
+                                base_sale["producto_oficial"] = None
+                                base_sale["talla"] = None
+                                base_sale["color"] = None
+                                base_sale["precio"] = 0.0
+                                base_sale["opciones_variante"] = []
+                            elif len(matches) == 1 and len(matches[0]["variantes"]) == 1:
+                                # Match exacto y Variante Única -> Perfecto
+                                variante = matches[0]["variantes"][0]
+                                base_sale["estado_match"] = "Exacto"
+                                base_sale["id_producto"] = variante["id_producto"]
+                                base_sale["producto_oficial"] = matches[0]["producto_oficial"]
+                                base_sale["talla"] = variante["talla"]
+                                base_sale["color"] = variante["color"]
+                                base_sale["precio"] = variante["precio"]
+                                base_sale["opciones_variante"] = []
+                            else:
+                                # Existen variantes, hay que aplanar opciones para el selectbox
+                                opciones = []
+                                for m in matches:
+                                    for v in m["variantes"]:
+                                        # String visual para el selectbox
+                                        label = f"{m['producto_oficial']} | {v['talla']} | {v['color']} | S/{v['precio']} (ID:{v['id_producto']})"
+                                        opciones.append(label)
+                                        
+                                base_sale["estado_match"] = "Ambigüedad"
+                                base_sale["id_producto"] = None # Requiere acción manual
+                                base_sale["producto_oficial"] = "-- Elige Variante --"
+                                base_sale["talla"] = None
+                                base_sale["color"] = None
+                                base_sale["precio"] = 0.0
+                                base_sale["opciones_variante"] = opciones # Inyectamos lista de strings
+                                
+                            processed_sales.append(base_sale)
+                            
+                        st.session_state.sales_data = processed_sales
                         st.session_state.last_execution_time = result["duration"]
                         st.rerun()
 
@@ -149,20 +206,24 @@ def render_voice_agent_tab():
         ok_url = get_icon_url(ok_svg)
 
         def check_row_status(row):
-            # Campos que no deben estar vacíos o con valores genéricos
+            # Check for conflict resolution requirement:
+            if row.get("estado_match") == "Ambigüedad" or row.get("producto_oficial") == "-- Elige Variante --":
+                return warning_url
+                
+            # Resto de validaciones estándar
             missing = False
             for k, v in row.items():
-                if k in ["estado", "visto_bueno"]: continue
+                if k in ["estado", "visto_bueno", "opciones_variante", "id_producto"]: continue
                 if v is None or v == "" or v == "Desconocido" or v == "Anónimo":
                     missing = True
                     break
             
-            # Si tiene visto bueno o no falta nada, es OK
-            if not missing or row.get("visto_bueno", False):
+            # Si tiene visto bueno explícito o si está Exacto
+            if (not missing and row.get("estado_match") == "Exacto") or row.get("visto_bueno", False):
                 return ok_url
             return warning_url
 
-        # Preparar datos con la columna de estado y asegurar que exista visto_bueno
+        # Para cada fila, asegurar que si es ambigüedad, mostramos el String visual
         display_data = []
         for row in st.session_state.sales_data:
             new_row = row.copy()
@@ -171,22 +232,20 @@ def render_voice_agent_tab():
             new_row["estado"] = check_row_status(new_row)
             display_data.append(new_row)
 
-        # Widget de Data Editor (tipo Excel)
         column_order = [
-            "estado", "visto_bueno", "producto", "categoria", "talla", "color", "cantidad", "precio", 
+            "estado", "visto_bueno", "producto_dictado", "producto_oficial", "talla", "color", "precio", "cantidad", 
             "nombre_cliente", "ubicacion_cliente", "genero", 
             "medio_pago", "fecha_registro"
         ]
         
         column_config = {
             "estado": st.column_config.ImageColumn("Stat", width="small", help="Estado de validación"),
-            "visto_bueno": st.column_config.CheckboxColumn("V.B.", help="Dar visto bueno manual"),
-            "producto": st.column_config.TextColumn("Producto", required=True),
-            "categoria": st.column_config.SelectboxColumn("Categoría", options=["Ropa", "Tecnología", "Hogar", "Otros"]),
-            "talla": st.column_config.TextColumn("Talla"),
-            "color": st.column_config.TextColumn("Color"),
+            "visto_bueno": st.column_config.CheckboxColumn("V.B.", help="Forzar aprobación manual de IA"),
+            "producto_dictado": st.column_config.TextColumn("Voz Extraida", disabled=True),
+            "talla": st.column_config.TextColumn("Talla", disabled=True),
+            "color": st.column_config.TextColumn("Color", disabled=True),
+            "precio": st.column_config.NumberColumn("Precio Final Unit.", disabled=True, format="S/ %.2f"),
             "cantidad": st.column_config.NumberColumn("Cant.", min_value=1, step=1),
-            "precio": st.column_config.NumberColumn("Precio", min_value=0.0, step=0.5, format="S/ %.2f"),
             "nombre_cliente": st.column_config.TextColumn("Cliente"),
             "ubicacion_cliente": st.column_config.TextColumn("Ubicación"),
             "genero": st.column_config.SelectboxColumn("Género", options=["M", "F", "U"]),
@@ -194,6 +253,23 @@ def render_voice_agent_tab():
             "fecha_registro": st.column_config.DateColumn("Fecha", format="YYYY-MM-DD"),
         }
         
+        # Inyectar selectbox dinámico por fila si hay conflicto
+        # Streamlit Data Editor no soporta opciones dinámicas por fila limpiamente en column_config,
+        # así que creamos una lista maestra con TODAS las opciones posibles de esas filas para el Selector
+        todas_las_opciones = ["-- Elige Variante --"]
+        for row in display_data:
+             opciones = row.get("opciones_variante", [])
+             if isinstance(opciones, list):
+                 for b in opciones:
+                      if b not in todas_las_opciones:
+                           todas_las_opciones.append(b)
+                           
+        column_config["producto_oficial"] = st.column_config.SelectboxColumn(
+             "ID BD (Match)", 
+             options=todas_las_opciones,
+             required=True
+        )
+
         edited_df = st.data_editor(
             display_data,
             num_rows="dynamic",
@@ -203,6 +279,24 @@ def render_voice_agent_tab():
             column_config=column_config,
             hide_index=True
         )
+        
+        # Sincronizador reverso: Si el usuario eligió una variante del dropdown, parsearla y extraer ID
+        import re
+        for i, edited_row in enumerate(edited_df):
+             # Si se alteró el selectbox
+             if edited_row.get("estado_match") == "Ambigüedad" and edited_row.get("producto_oficial") != "-- Elige Variante --":
+                  raw_str = edited_row["producto_oficial"]
+                  # Extract ID using RegEx: (ID: 15)
+                  match_id = re.search(r"\(ID:(\d+)\)", raw_str)
+                  if match_id:
+                       id_real = int(match_id.group(1))
+                       # Como sabemos la id real, podemos considerarlo resuelto
+                       edited_row["id_producto"] = id_real
+                       edited_row["estado_match"] = "Exacto manual"
+                       # Optional: Parsear talla color para reflejo (asumiremos que db_service hará el insert con ID)
+                       
+             # Guardamos cambio
+             st.session_state.sales_data[i] = edited_row
         
         # Sincronizar cambios del editor con el estado de la sesión
         # Importante: Solo actualizamos si hay cambios reales para evitar bucles de rerun innecesarios
@@ -220,15 +314,27 @@ def render_voice_agent_tab():
                 # Integración con Servicio de Base de Datos
                 from .services.db_service import insert_sales_to_db
                 
-                # Convertir dataframe a lista de dicts para el servicio
+                # Convertir dataframe a lista de dicts limpios mapeando ID correcto
                 if isinstance(edited_df, list):
-                    sales_list = edited_df
+                    temp_list = edited_df
                 else:
                     try:
-                        sales_list = edited_df.to_dict('records')
+                        temp_list = edited_df.to_dict('records')
                     except AttributeError:
-                         # Fallback for unexpected types
-                         sales_list = edited_df
+                         temp_list = edited_df
+
+                sales_list = []
+                for t in temp_list:
+                     sales_list.append({
+                         "producto": None, # Force reliance on ID below
+                         "id_producto_directo": t.get("id_producto"), # New internal bridge field
+                         "talla": None, 
+                         "color": None,
+                         "cantidad": t.get("cantidad", 1),
+                         "medio_pago": t.get("medio_pago", "Efectivo"),
+                         "nombre_cliente": t.get("nombre_cliente", "Anónimo"),
+                         "fecha_registro": t.get("fecha_registro")
+                     })
 
                 result = insert_sales_to_db(sales_list)
                 
