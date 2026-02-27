@@ -101,9 +101,7 @@ CREATE TABLE warehouse.dim_producto (
     precio_adquisicion NUMERIC(10,2)
 );
 
--- =========================
--- 👕 DIM_VARIANTE_PRODUCTO (ARREGLADA)
--- =========================
+
 
 -- =========================
 -- 👤 DIM_CLIENTE
