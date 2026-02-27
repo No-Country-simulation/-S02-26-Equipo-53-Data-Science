@@ -17,11 +17,15 @@ def get_engine():
 def upload_to_staging(df, table_name):
     try:
         engine = get_engine()
+        
+      
         # Usamos una transacción para vaciar e insertar (Estrategia sugerida)
         with engine.begin() as conn:
+            
             # 1. Vaciar la tabla (Truncate) - mucho más seguro que 'replace'
             conn.execute(text(f"TRUNCATE TABLE staging.{table_name}"))
-            
+            if "fecha_carga" in df.columns:
+               df = df.drop(columns=["fecha_carga"])
             # 2. Insertar los nuevos datos (Append)
             df.to_sql(table_name, conn, schema='staging', if_exists='append', index=False)
             
