@@ -94,7 +94,7 @@ def search_inventory_fuzzy(dictated_name: str, limit: int = 5) -> list:
                 return []
                 
             # 2. Hacer Fuzzy Match. Extract_Bests devuelve (nombre, score)
-            mejores_matches = process.extractBests(dictated_name, productos_unicos, limit=limit, score_cutoff=60)
+            mejores_matches = process.extractBests(dictated_name, productos_unicos, limit=limit, score_cutoff=50)
             
             if not mejores_matches:
                 return []
@@ -267,13 +267,13 @@ def get_product_variants(product_name):
     try:
         with conn.cursor() as cursor:
             query = sql.SQL('''
-                SELECT talla, color, stock_actual, precio_venta_unitario
+                SELECT id_producto, talla, color, stock_actual, precio_venta_unitario
                 FROM {}.inventario_raw
                 WHERE producto = %s AND stock_actual > 0
             ''').format(sql.Identifier(schema))
             cursor.execute(query, (product_name,))
             res = cursor.fetchall()
-            return [{"talla": r[0], "color": r[1], "stock_actual": r[2], "precio_venta_unitario": r[3]} for r in res]
+            return [{"id_producto": r[0], "talla": r[1], "color": r[2], "stock_actual": r[3], "precio": float(r[4]) if r[4] else 0.0} for r in res]
     except Exception as e:
         logError(f"Error en get_product_variants: {e}")
         return []

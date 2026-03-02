@@ -24,9 +24,7 @@ def extract_sales_data(text_input: str):
         
     try:
         start_time = datetime.datetime.now()
-        # Usar modelo estable disponible
         model = genai.GenerativeModel('gemini-2.5-flash')
-        
         current_date = datetime.date.today().strftime("%Y-%m-%d")
         
         prompt = f"""
@@ -34,40 +32,40 @@ def extract_sales_data(text_input: str):
         "{text_input}"
         
         Debes devolver una LISTA JSON de objetos. Cada objeto representa una venta.
-        Si un campo no se menciona, usa null.
-        IMPORTANTE: NO inventes ni extraigas precios, tallas ni colores por separado. Todo el nombre descriptivo debe ir en "producto_dictado".
+        
+        REGLAS CRÍTICAS:
+        1. producto_base: Extrae SOLO el nombre base del artículo (ej: si dice "Polo azul talla M", producto_base es "Polo").
+        2. talla/color: Extrae estos atributos por separado. Si no se mencionan, usa null.
+        3. Si un campo no se menciona EXPLÍCITAMENTE, usa null. NO INVENTES DATOS.
+        4. medio_pago: Solo extrae si el usuario dice algo como "pagó con yape", "en efectivo", etc.
         
         Campos por objeto:
-        - producto_dictado: string (Nombre literal que el usuario dictó, ej: "Polo azul talla M", "Zapatilla Nike")
+        - producto_base: string (Nombre del artículo)
+        - talla: string/number o null
+        - color: string o null
         - cantidad: integer (default 1)
-        - nombre_cliente: string (Nombre del cliente o "Anónimo")
-        - ubicacion_cliente: string (Ciudad/Distrito inferido o "Desconocido")
-        - genero: string (M/F/U, inferido según el producto o cliente)
-        - medio_pago: string (Efectivo, Yape, Plin, Transferencia, Tarjeta, etc. Inferido o "Efectivo")
+        - precio: number o null
+        - nombre_cliente: string o null
+        - ubicacion_cliente: string o null
+        - genero: string o null (M/F/U)
+        - medio_pago: string o null
         - fecha_registro: string (YYYY-MM-DD, hoy es {current_date})
-
-        Ejemplo de salida:
-        [
-            {{"producto_dictado": "Polo Rojo M", "cantidad": 2, "nombre_cliente": "Juan", "ubicacion_cliente": "Lima", "genero": "M", "medio_pago": "Yape", "fecha_registro": "{current_date}"}}
-        ]
 
         Responde SOLO con la LISTA JSON. Sin bloques de código markdown.
         """
         
         response = model.generate_content(prompt)
         cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        
         data = json.loads(cleaned_text)
         
-        # Asegurar que sea una lista
         if isinstance(data, dict):
             data = [data]
             
-        end_time = datetime.datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        
-        logInfo(f"Datos extraídos en {duration:.2f}s: {len(data)} registros")
-        return {"data": data, "duration": duration}
+        return {"data": data, "duration": (datetime.datetime.now() - start_time).total_seconds()}
+
+    except Exception as e:
+        logError(f"Error en extracción con Gemini: {e}")
+        return {"error": str(e), "duration": 0}
 
     except Exception as e:
         logError(f"Error en extracción con Gemini: {e}")
@@ -143,4 +141,42 @@ def extract_product_attributes_batch(products: list) -> dict:
     except Exception as e:
         logError(f"Error desempaquetando atributos con Gemini: {e}")
         return {"data": []}
+
+def detect_business_antipatterns(sales_df_json: str):
+    """
+    Usa Gemini para auditar un listado de ventas en staging y detectar anomalías de negocio.
+    """
+    if not api_key:
+        return {"warnings": []}
+        
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""
+        Actúa como un Auditor de Negocios y Experto en Control de Pérdidas.
+        Analiza este listado de ventas (en formato JSON) que están a punto de registrarse:
+        
+        "{sales_df_json}"
+        
+        Tu objetivo es detectar "Antipatrones de Negocio" o anomalías. Ejemplos:
+        - Ventas con precio 0 o excesivamente bajo/alto comparado con otros items similares.
+        - Cantidades inusualmente grandes para un solo cliente.
+        - Mismo cliente comprando el mismo item varias veces en segundos (posible duplicidad).
+        - Advertencias sobre clientes "Anónimos" recurrentes que deberían ser registrados.
+        
+        Para cada anomalía encontrada, devuelve un objeto JSON con:
+        1. "gravedad": "Alta", "Media" o "Baja".
+        2. "mensaje": Una explicación breve de qué está mal.
+        3. "consecuencia": Qué impacto tiene esto para el dueño (ej: "Pérdida de margen", "Error de inventario").
+        
+        Responde SOLO con una LISTA JSON de estos objetos. Si no hay anomalías, devuelve una lista vacía [].
+        """
+        
+        response = model.generate_content(prompt)
+        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
+        warnings = json.loads(cleaned_text)
+        return {"warnings": warnings}
+    except Exception as e:
+        logError(f"Error en auditoría IA: {e}")
+        return {"warnings": [{"gravedad": "Baja", "mensaje": "No se pudo completar la auditoría IA.", "consecuencia": "Revisión manual requerida."}]}
 

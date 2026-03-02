@@ -4,9 +4,9 @@ from ..services.db_service import (
     get_inventory_summary, 
     get_product_variants, 
     get_all_clients,
-    insert_new_client,
-    insert_sales_to_db
+    insert_new_client
 )
+from ..services.state_manager import add_to_staging
 from libs.logger import logError, logInfo
 
 @st.dialog("Agregar al Carrito")
@@ -49,7 +49,7 @@ def modal_seleccion_variante(producto_elegido):
         
     variante_info = variante_exacta.iloc[0]
     stock_maximo = int(variante_info['stock_actual'])
-    precio_base = float(variante_info['precio_venta_unitario']) if pd.notnull(variante_info['precio_venta_unitario']) else 0.0
+    precio_base = float(variante_info['precio']) if pd.notnull(variante_info['precio']) else 0.0
 
     st.write(f"**Stock disponible:** {stock_maximo}")
     
@@ -62,8 +62,9 @@ def modal_seleccion_variante(producto_elegido):
         
     if st.button("Añadir", type="primary", use_container_width=True):
         nuevo_item = {
+            "id_producto": int(variante_info['id_producto']),
             "producto": producto_elegido,
-            "categoria": st.session_state.current_cat, # Pasado por estado antes de abrir
+            "categoria": st.session_state.current_cat,
             "talla": talla_seleccionada if talla_seleccionada != "Única" else None,
             "color": color_seleccionado if color_seleccionado != "Único" else None,
             "cantidad": cantidad,
@@ -100,22 +101,48 @@ def render_matriz_productos():
     if cat_seleccionada and cat_seleccionada != "Todas":
         df_prod = df_prod[df_prod['categoria'] == cat_seleccionada]
 
+    # --- CSS para Tarjetas Premium ---
+    st.markdown("""
+        <style>
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        [data-testid="stVerticalBlockBorderWrapper"]:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Dibujar la Grilla
-    cols_per_row = 4
+    cols_per_row = 5
     for i in range(0, len(df_prod), cols_per_row):
         cols = st.columns(cols_per_row)
         for j in range(cols_per_row):
             if i + j < len(df_prod):
                 producto = df_prod.iloc[i + j]
                 nombre = producto['producto']
-                stock = producto['total_stock']
+                stock = int(producto['total_stock'])
                 cat = producto['categoria']
                 
+                # Semáforo de Stock
+                if stock > 10:
+                    stock_color = "green"
+                    stock_label = "✅ En Stock"
+                elif stock > 0:
+                    stock_color = "orange"
+                    stock_label = "⚠️ Bajo Stock"
+                else:
+                    stock_color = "red"
+                    stock_label = "❌ Agotado"
+
                 with cols[j]:
                     with st.container(border=True):
                         st.markdown(f"**{nombre}**")
-                        st.caption(f"Stock total: {stock}")
-                        if st.button("➕ Seleccionar", key=f"btn_{nombre}"):
+                        st.markdown(f"<span style='color:{stock_color}; font-weight:bold; font-size: 0.8rem;'>{stock_label} ({stock})</span>", unsafe_allow_html=True)
+                        st.caption(f"📁 {cat}")
+                        
+                        if st.button("➕", key=f"btn_{nombre}", use_container_width=True):
                             st.session_state.current_cat = cat
                             modal_seleccion_variante(nombre)
 
@@ -190,7 +217,7 @@ def render_checkout_y_cliente():
     medio_pago = st.radio("Selecciona un medio de pago (Obligatorio)", 
                           ["Efectivo", "Yape", "Plin", "Tarjeta", "Transferencia"], horizontal=True)
                           
-    if st.button("🚀 Confirmar Venta", type="primary", use_container_width=True):
+    if st.button("🚀 Confirmar Venta", type="primary"):
         nombre_cli_final = "Anónimo"
         if cliente_seleccionado != "-- Seleccionar Existente --":
              nombre_cli_final = dict_clientes[cliente_seleccionado]['nombre_cliente']
@@ -202,26 +229,27 @@ def render_checkout_y_cliente():
         
         for item in st.session_state.carrito:
             sales_to_insert.append({
+                "id_producto": item.get("id_producto"),
                 "producto": item["producto"],
                 "categoria": item.get("categoria"),
                 "talla": item.get("talla"),
                 "color": item.get("color"),
                 "cantidad": item["cantidad"],
                 "precio": float(item["precio"]),
-                "nombre_cliente": nombre_cli_final,
+                "cliente": nombre_cli_final,
                 "medio_pago": medio_pago,
-                "fecha_registro": hoy
+                "fecha_registro": hoy,
+                "origen": "Manual"
             })
             
-        res_insert = insert_sales_to_db(sales_to_insert)
-        if res_insert["success"]:
-            st.success(f"🎉 Venta guardada correctamente. {res_insert['message']}")
-            st.session_state.carrito = [] # Limpiar carrito
-            import time
-            time.sleep(2)
-            st.rerun()
-        else:
-            st.error(f"Error al procesar la venta: {res_insert['message']}")
+        # Enviar a Staging en lugar de BD directa
+        add_to_staging("ventas", sales_to_insert)
+        
+        st.success(f"✅ {len(sales_to_insert)} items enviados al Panel de Control (Raw) para revisión final.")
+        st.session_state.carrito = [] # Limpiar carrito
+        import time
+        time.sleep(1.5)
+        st.rerun()
 
 def render_manual_input_tab():
     if 'carrito' not in st.session_state:
@@ -229,7 +257,7 @@ def render_manual_input_tab():
     if 'current_cat' not in st.session_state:
         st.session_state.current_cat = None
         
-    col_left, col_right = st.columns([0.65, 0.35])
+    col_left, col_right = st.columns([0.72, 0.28])
     
     with col_left:
         render_matriz_productos()

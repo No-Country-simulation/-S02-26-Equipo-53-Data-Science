@@ -8,10 +8,13 @@ from libs.logger import logError, logInfo
 # Definir la estructura obligatoria que requiere la base de datos
 TEMPLATE_INVENTARIO = ["producto", "categoria", "talla", "color", "stock_actual", "precio_adquisicion", "precio_venta"]
 TEMPLATE_VENTAS = ["producto", "cantidad", "precio", "nombre_cliente", "medio_pago", "fecha_registro"]
+TEMPLATE_CLIENTES = ["nombre_cliente", "ubicacion_cliente", "genero"]
 
 def download_template_btn(tipo: str):
     """Genera un botón funcional para descargar un CSV de plantilla salvavidas."""
-    cols = TEMPLATE_INVENTARIO if tipo == "Inventario" else TEMPLATE_VENTAS
+    if tipo == "Inventario": cols = TEMPLATE_INVENTARIO
+    elif tipo == "Ventas": cols = TEMPLATE_VENTAS
+    else: cols = TEMPLATE_CLIENTES
     df_template = pd.DataFrame(columns=cols)
     buffer = io.BytesIO()
     df_template.to_csv(buffer, index=False, encoding='utf-8')
@@ -34,27 +37,46 @@ def highlight_invalid_cells(val):
 
 def render_paso1_seleccion():
     st.subheader("Paso 1: ¿Qué deseas cargar?")
-    col_inv, col_ven = st.columns(2)
     
-    with col_inv:
+    # Fila 1: Estándares
+    c1, c2, c3 = st.columns(3)
+    with c1:
         with st.container(border=True):
-            st.markdown("### 📦 Inventario Inicial")
-            st.caption("Carga tus productos, stock y precios base.")
+            st.markdown("### 📦 Inventario")
             download_template_btn("Inventario")
-            if st.button("Subir archivo de Inventario", key="btn_sel_inv", use_container_width=True):
+            if st.button("Subir Inventario", key="btn_sel_inv", use_container_width=True):
                 st.session_state.mass_upload_tipo = "Inventario"
                 st.session_state.mass_upload_step = 2
                 st.rerun()
-                
-    with col_ven:
+    with c2:
         with st.container(border=True):
-            st.markdown("### 📈 Historial de Ventas")
-            st.caption("Sube tus ventas pasadas desde Excel.")
+            st.markdown("### 📈 Ventas")
             download_template_btn("Ventas")
-            if st.button("Subir archivo de Ventas", key="btn_sel_ven", use_container_width=True):
+            if st.button("Subir Ventas", key="btn_sel_ven", use_container_width=True):
                  st.session_state.mass_upload_tipo = "Ventas"
                  st.session_state.mass_upload_step = 2
                  st.rerun()
+    with c3:
+        with st.container(border=True):
+            st.markdown("### 👥 Clientes")
+            download_template_btn("Clientes")
+            if st.button("Subir Clientes", key="btn_sel_cli", use_container_width=True):
+                 st.session_state.mass_upload_tipo = "Clientes"
+                 st.session_state.mass_upload_step = 2
+                 st.rerun()
+
+    # Fila 2: El Inteligente
+    st.divider()
+    with st.container(border=True):
+        cc1, cc2 = st.columns([0.7, 0.3])
+        with cc1:
+            st.markdown("### 🧠 Mapeador Inteligente (IA)")
+            st.write("Sube cualquier archivo (sin importar las columnas) y deja que Gemini lo organice por ti.")
+        with cc2:
+            if st.button("🚀 Iniciar Mapper IA", type="primary", use_container_width=True):
+                st.session_state.mass_upload_tipo = "Smart"
+                st.session_state.mass_upload_step = 2
+                st.rerun()
 
 def render_paso2_mapeador():
     tipo = st.session_state.mass_upload_tipo
@@ -62,208 +84,202 @@ def render_paso2_mapeador():
     
     if st.button("⬅️ Volver a Paso 1", key="btn_back_1"):
         st.session_state.mass_upload_step = 1
-        st.session_state.mass_upload_file = None
-        st.session_state.mass_upload_df = None
-        st.session_state.mass_upload_mapping = {}
         st.rerun()
         
-    archivo = st.file_uploader(f"Sube tu archivo de {tipo} (.csv, .xlsx)", type=["csv", "xlsx"])
+    archivo = st.file_uploader(f"Sube tu archivo (.csv, .xlsx)", type=["csv", "xlsx"])
     
     if archivo:
         try:
-            if archivo.name.endswith(".csv"):
-                 df_raw = pd.read_csv(archivo)
-            else:
-                 df_raw = pd.read_excel(archivo)
+            if archivo.name.endswith(".csv"): df_raw = pd.read_csv(archivo)
+            else: df_raw = pd.read_excel(archivo)
                  
             st.session_state.mass_upload_file = df_raw
-            # Detectar si el usuario subió nuestra plantilla perfecta
-            expected_cols = TEMPLATE_INVENTARIO if tipo == "Inventario" else TEMPLATE_VENTAS
             raw_cols = df_raw.columns.tolist()
-            
-            es_plantilla_perfecta = all(col in raw_cols for col in expected_cols)
-            
-            if es_plantilla_perfecta:
-                st.success("✅ ¡Has subido la plantilla perfecta DATAMARK! Saltando al Paso 3...")
-                # Auto mapear directo
-                st.session_state.mass_upload_mapping = {c: c for c in expected_cols}
-                st.session_state.mass_upload_step = 3
-                import time
-                time.sleep(1.5)
-                st.rerun()
-                return
 
-            # Si es desordenado, correr el Mapper Inteligente (+ Gemini)
-            st.info("💡 Hemos detectado un formato libre. Estamos analizando las columnas con IA para sugerirte emparejamientos...")
+            # En modo Smart, primero preguntamos a qué tabla apunta
+            if tipo == "Smart":
+                target_table = st.radio("¿A qué tabla corresponden estos datos?", ["Inventario", "Ventas", "Clientes"], horizontal=True)
+                st.session_state.mass_upload_target = target_table
+                if target_table == "Inventario": expected_cols = TEMPLATE_INVENTARIO
+                elif target_table == "Ventas": expected_cols = TEMPLATE_VENTAS
+                else: expected_cols = TEMPLATE_CLIENTES
+            else:
+                if tipo == "Inventario": expected_cols = TEMPLATE_INVENTARIO
+                elif tipo == "Ventas": expected_cols = TEMPLATE_VENTAS
+                else: expected_cols = TEMPLATE_CLIENTES
             
-            # Cache del prompt gemini en session state para no repetirlo cada re-render de streamlit
+            # Mapper Inteligente
+            st.info("🤖 Analizando columnas con IA...")
             if 'gemini_suggestions' not in st.session_state:
-                with st.spinner("🤖 Gemini está analizando tu Excel..."):
-                     st.session_state.gemini_suggestions = suggest_column_mapping(raw_cols, expected_cols)
+                st.session_state.gemini_suggestions = suggest_column_mapping(raw_cols, expected_cols)
                      
             sug_map = st.session_state.gemini_suggestions.get("mapping", {})
-            
-            st.markdown("### Enlaza las columnas obligatorias")
-            st.caption("Revisa que los datos de tu Excel correspondan a lo que DATAMARK necesita.")
-            
             current_mapping = {}
             opciones_select = ["-- Faltante / Asignar Nulo --"] + raw_cols
             
             with st.form("form_mapeo"):
                 for req_col in expected_cols:
-                    # Sugerencia IA por defecto?
                     default_idx = 0
                     if req_col in sug_map:
-                         try:
-                             default_idx = opciones_select.index(sug_map[req_col])
-                         except ValueError:
-                             pass 
-                             
-                    val_seleccionado = st.selectbox(
-                        f"Tu columna en Excel para 👉 **'{req_col}'**", 
-                        options=opciones_select, 
-                        index=default_idx
-                    )
+                         try: default_idx = opciones_select.index(sug_map[req_col])
+                         except ValueError: pass 
+                    
+                    val_seleccionado = st.selectbox(f"Columna para **'{req_col}'**", options=opciones_select, index=default_idx)
                     current_mapping[req_col] = val_seleccionado
                     
                 enviar_mapeo = st.form_submit_button("Siguiente: Limpiar y Validar", type="primary")
             
             if enviar_mapeo:
-                # Restricción: No puede haber obligatorios críticos nulos
-                # (Para inventario, prod obliga. Para ventas: prod y precio obligan)
-                errores = []
-                if current_mapping.get("producto") == "-- Faltante / Asignar Nulo --":
-                    errores.append("No puedes dejar el 'producto' faltante.")
-                if tipo == "Ventas" and current_mapping.get("precio") == "-- Faltante / Asignar Nulo --":
-                    errores.append("No puedes dejar el 'precio' faltante en las ventas.")
+                st.session_state.mass_upload_mapping = current_mapping
+                st.session_state.mass_upload_step = 3
+                # Limpiar cache de IA para el siguiente paso si fuera necesario
+                if 'cleaned_dataframe' in st.session_state: del st.session_state.cleaned_dataframe
+                st.rerun()
 
-                if len(errores) > 0:
-                    for e in errores: st.error(e)
-                else:
-                    st.session_state.mass_upload_mapping = current_mapping
-                    st.session_state.mass_upload_step = 3
-                    st.rerun()
+        except Exception as e:
+            st.error(f"Error: {e}")
 
         except Exception as e:
             st.error(f"No se pudo leer el archivo: {e}")
 
 def render_paso3_validacion():
     tipo = st.session_state.mass_upload_tipo
-    st.subheader(f"Paso 3: Extraer y Validar ({tipo})")
+    st.subheader(f"Paso 3: Limpieza y Validación con IA ({tipo})")
     
-    col_b, _ = st.columns([2, 5])
+    col_b, col_stats = st.columns([0.3, 0.7])
     with col_b:
-        if st.button("⬅️ Retrospecto al Mapeo", key="btn_back_2"):
+        if st.button("⬅️ Volver al Mapeo", key="btn_back_2"):
             st.session_state.mass_upload_step = 2
             st.rerun()
 
     df_raw = st.session_state.mass_upload_file
     mapping = st.session_state.mass_upload_mapping
     
-    # 1. Transformación inicial de Pandas basándose en Mapping
-    df_clean = pd.DataFrame()
-    for req_col, excel_col in mapping.items():
-         if excel_col == "-- Faltante / Asignar Nulo --":
-             df_clean[req_col] = None
-         else:
-             df_clean[req_col] = df_raw[excel_col]
-
-    # Prevenir reprocesamiento IA guardando en session state
+    # 1. Aplicar Mapeo y Limpieza Inicial
     if 'cleaned_dataframe' not in st.session_state:
-        # APLICAR EXTRACCIÓN HÍBRIDA (IA + PANDAS)
-        with st.spinner("🤖 Aplicando algoritmos híbridos de limpieza y extracción de atributos..."):
+        df_clean = pd.DataFrame()
+        for req_col, excel_col in mapping.items():
+            if excel_col == "-- Faltante / Asignar Nulo --":
+                df_clean[req_col] = None
+            else:
+                df_clean[req_col] = df_raw[excel_col]
+
+        with st.status("🛠️ Ejecutando Pipeline de Limpieza...", expanded=True) as status:
+            # --- Limpieza PANDAS (Tipos de Datos) ---
+            st.write("Convertiendo tipos de datos...")
+            for col in ['precio', 'precio_adquisicion', 'precio_venta']:
+                if col in df_clean.columns:
+                    df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
             
-            # --- Tareas de Limpieza de Pandas ---
-            if 'precio' in df_clean.columns:
-                df_clean['precio'] = pd.to_numeric(df_clean['precio'], errors='coerce')
-            if 'precio_adquisicion' in df_clean.columns:
-                df_clean['precio_adquisicion'] = pd.to_numeric(df_clean['precio_adquisicion'], errors='coerce')
-            if 'precio_venta' in df_clean.columns:
-                df_clean['precio_venta'] = pd.to_numeric(df_clean['precio_venta'], errors='coerce')
-            if 'stock_actual' in df_clean.columns:
-                df_clean['stock_actual'] = pd.to_numeric(df_clean['stock_actual'], errors='coerce').fillna(0).astype(int)
-            if 'cantidad' in df_clean.columns:
-                df_clean['cantidad'] = pd.to_numeric(df_clean['cantidad'], errors='coerce').fillna(1).astype(int)
+            for col in ['stock_actual', 'cantidad']:
+                if col in df_clean.columns:
+                    df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0).astype(int)
 
-            # --- Tarea de Limpieza IA (Solo para Inventario si las tallas/colores son nulos o están empotrados) ---
+            # --- Limpieza IA (Solo si faltan atributos críticos) ---
             if tipo == "Inventario":
-                 # Supongamos que si la columna 'color' y 'talla' están ambas llenas de Nulos
-                 # Significa que no subió esas columnas porque las empotró en el nombre.
-                 # Desempaquetemos usando Gemini.
-                 
-                 necesita_ia = df_clean['talla'].isna().all() and df_clean['color'].isna().all()
-                 # Para no agobiar el API, extraigamos si hay menos de 50 filas únicas (por seguridad del MVP)
-                 if necesita_ia and len(df_clean) <= 100:
-                     unique_names = df_clean['producto'].dropna().unique().tolist()
-                     extracted_data = extract_product_attributes_batch(unique_names).get("data", [])
-                     
-                     # Re-asignar desempaquetado al dataframe
-                     extract_dict = {item['original']: item for item in extracted_data if isinstance(item, dict) and 'original' in item}
-                     
-                     def apply_ai_extract(row, target_col):
-                         name = row['producto']
-                         if name in extract_dict:
-                             return extract_dict[name].get(target_col, row[target_col])
-                         return row[target_col]
-                         
-                     df_clean['talla'] = df_clean.apply(lambda r: apply_ai_extract(r, 'talla'), axis=1)
-                     df_clean['color'] = df_clean.apply(lambda r: apply_ai_extract(r, 'color'), axis=1)
-                     df_clean['producto_original'] = df_clean['producto'] # back up the long name
-                     df_clean['producto'] = df_clean.apply(lambda r: apply_ai_extract(r, 'producto_base'), axis=1)
+                st.write("🤖 Gemini analizando descripciones de productos...")
+                necesita_ia = df_clean['talla'].isna().all() or df_clean['color'].isna().all()
+                if necesita_ia and len(df_clean) <= 150:
+                    unique_names = df_clean['producto'].dropna().unique().tolist()
+                    extracted_data = extract_product_attributes_batch(unique_names).get("data", [])
+                    
+                    extract_dict = {item['original']: item for item in extracted_data if isinstance(item, dict) and 'original' in item}
+                    
+                    def apply_ai_extract(row, target_col):
+                        name = row['producto']
+                        if name in extract_dict:
+                            # Priorizar valor extraído si el original es nulo
+                            extracted_val = extract_dict[name].get(target_col)
+                            return extracted_val if pd.isna(row[target_col]) or row[target_col] == "" else row[target_col]
+                        return row[target_col]
+                        
+                    df_clean['talla'] = df_clean.apply(lambda r: apply_ai_extract(r, 'talla'), axis=1)
+                    df_clean['color'] = df_clean.apply(lambda r: apply_ai_extract(r, 'color'), axis=1)
+                    # No sobreescribimos 'producto' a menos que sea necesario para simplificar
+            
+            st.session_state.cleaned_dataframe = df_clean
+            status.update(label="✅ Pipeline completado", state="complete")
 
-        # Guardar en estado final listo para previsualizar
-        st.session_state.cleaned_dataframe = df_clean
-    
-    # 2. Renderizar st.data_editor para permitir correcciones humanas de los NA/rojos
-    st.info("Revisa la matriz y corrige cualquier celda resaltada en **ROJO** (Datos faltantes o incompatibles).")
-    
+    # 2. Previsualización y Corrección Humana
     current_df = st.session_state.cleaned_dataframe
-    styled_df = current_df.style.map(highlight_invalid_cells)
     
-    # Render interactive grid!
+    # Reporte de Errores (Resumen arriba)
+    missing_prods = current_df['producto'].isna().sum()
+    invalid_prices = 0
+    if 'precio' in current_df.columns:
+        invalid_prices = current_df['precio'].isna().sum()
+    
+    if missing_prods > 0 or invalid_prices > 0:
+        st.error(f"⚠️ Se detectaron **{missing_prods}** productos sin nombre y **{invalid_prices}** errores de precio.")
+    else:
+        st.success("✨ ¡Todo parece estar en orden! Revisa una última vez.")
+
+    # Configuración de Columnas Estricta
+    col_config = {
+        "producto": st.column_config.TextColumn("Producto", required=True),
+        "categoria": st.column_config.TextColumn("Categoría"),
+        "talla": st.column_config.TextColumn("Talla"),
+        "color": st.column_config.TextColumn("Color"),
+    }
+    if tipo == "Inventario":
+        col_config.update({
+            "stock_actual": st.column_config.NumberColumn("Stock", min_value=0),
+            "precio_adquisicion": st.column_config.NumberColumn("Costo (S/)", min_value=0.0, format="S/ %.2f"),
+            "precio_venta": st.column_config.NumberColumn("Venta (S/)", min_value=0.0, format="S/ %.2f")
+        })
+    else:
+        col_config.update({
+            "cantidad": st.column_config.NumberColumn("Cant.", min_value=1),
+            "precio": st.column_config.NumberColumn("Precio (S/)", min_value=0.0, format="S/ %.2f")
+        })
+
     edited_df = st.data_editor(
-         styled_df,
+         current_df.style.map(highlight_invalid_cells),
          use_container_width=True,
          num_rows="dynamic",
-         key="data_editor_bulk"
+         column_config=col_config,
+         key="data_editor_bulk_v2"
     )
     
-    # Evaluar si la grilla tiene errores
-    has_errors = edited_df.isna().any().any() # Si tiene NA's crudos sin resolver
-    
-    # Validacion estricta específica
-    if tipo == "Inventario" and edited_df['producto'].isna().any():
-         has_errors = True
-    elif tipo == "Ventas" and (edited_df['producto'].isna().any() or edited_df['precio'].isna().any()):
-         has_errors = True
-         
+    # Validar antes de enviar
+    has_errors = edited_df['producto'].isna().any()
+    if tipo == "Ventas" and 'precio' in edited_df.columns:
+        has_errors = has_errors or edited_df['precio'].isna().any()
+
+    # Botones Finales
     st.divider()
+    c1, c2, c3 = st.columns(3)
     
-    col_submit = st.columns([1, 1, 1])
-    with col_submit[1]:
-        if has_errors:
-             st.warning("⚠️ Debes corregir todas las celdas nulas obligatorias resaltadas para poder guardar.")
-             st.button("Guardar en Base de Datos", disabled=True, type="primary")
-        else:
-             if st.button("🚀 Guardar en Base de Datos", disabled=False, type="primary"):
-                  with st.spinner("Realizando Resolución de Entidades e Inserción Segura..."):
-                       # Convert DataFrame back to list of dicts for our db functions
-                       records = edited_df.to_dict('records')
-                       
-                       res = None
-                       if tipo == "Inventario":
-                            res = upsert_inventory_bulk(records)
-                       else:
-                            res = resolve_and_insert_sales_bulk(records)
-                            
-                       if res and res.get("success"):
-                            st.success(f"🎉 {dict(res).get('message', 'Operación exitosa')}")
-                            # Clean states
-                            st.session_state.mass_upload_step = 1
-                            if 'gemini_suggestions' in st.session_state: del st.session_state.gemini_suggestions
-                            if 'cleaned_dataframe' in st.session_state: del st.session_state.cleaned_dataframe
-                       else:
-                            st.error(f"Error bloqueante en DB: {res.get('message')}")
+    with c1:
+        # Pestaña Smart: Botón de descarga de Normalizado
+        buffer = io.BytesIO()
+        edited_df.to_excel(buffer, index=False)
+        st.download_button(
+            "⬇️ Descargar Excel Normalizado",
+            data=buffer,
+            file_name=f"normalizado_{tipo.lower()}.xlsx",
+            use_container_width=True
+        )
+
+    with c2:
+        if st.button("🚀 Enviar a Raw", type="primary", use_container_width=True, disabled=has_errors):
+            from ..services.state_manager import add_to_staging
+            records = edited_df.to_dict('records')
+            # Inyectar origen y unificar campo cliente
+            for r in records: 
+                r["origen"] = f"Carga/{tipo}"
+                if "nombre_cliente" in r:
+                    r["cliente"] = r.pop("nombre_cliente")
+            
+            if tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas"):
+                add_to_staging("ventas", records)
+            elif tipo == "Inventario" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Inventario"):
+                add_to_staging("inventario", records)
+                
+            st.success("✅ Datos enviados al Panel de Control (Raw).")
+            st.session_state.mass_upload_step = 1
+            if 'cleaned_dataframe' in st.session_state: del st.session_state.cleaned_dataframe
+            st.rerun()
 
 def render_mass_upload_tab():
     if 'mass_upload_step' not in st.session_state:
