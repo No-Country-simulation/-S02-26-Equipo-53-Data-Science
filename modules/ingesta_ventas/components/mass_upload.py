@@ -26,7 +26,7 @@ def download_template_btn(tipo: str):
         file_name=f"plantilla_{tipo.lower()}_datamark.csv",
         mime="text/csv",
         type="secondary",
-        use_container_width=True
+        width="stretch"
     )
 
 def highlight_invalid_cells(val):
@@ -44,7 +44,7 @@ def render_paso1_seleccion():
         with st.container(border=True):
             st.markdown("### 📦 Inventario")
             download_template_btn("Inventario")
-            if st.button("Subir Inventario", key="btn_sel_inv", use_container_width=True):
+            if st.button("Subir Inventario", key="btn_sel_inv", width="stretch"):
                 st.session_state.mass_upload_tipo = "Inventario"
                 st.session_state.mass_upload_step = 2
                 st.rerun()
@@ -52,7 +52,7 @@ def render_paso1_seleccion():
         with st.container(border=True):
             st.markdown("### 📈 Ventas")
             download_template_btn("Ventas")
-            if st.button("Subir Ventas", key="btn_sel_ven", use_container_width=True):
+            if st.button("Subir Ventas", key="btn_sel_ven", width="stretch"):
                  st.session_state.mass_upload_tipo = "Ventas"
                  st.session_state.mass_upload_step = 2
                  st.rerun()
@@ -60,7 +60,7 @@ def render_paso1_seleccion():
         with st.container(border=True):
             st.markdown("### 👥 Clientes")
             download_template_btn("Clientes")
-            if st.button("Subir Clientes", key="btn_sel_cli", use_container_width=True):
+            if st.button("Subir Clientes", key="btn_sel_cli", width="stretch"):
                  st.session_state.mass_upload_tipo = "Clientes"
                  st.session_state.mass_upload_step = 2
                  st.rerun()
@@ -73,7 +73,7 @@ def render_paso1_seleccion():
             st.markdown("### 🧠 Mapeador Inteligente (IA)")
             st.write("Sube cualquier archivo (sin importar las columnas) y deja que Gemini lo organice por ti.")
         with cc2:
-            if st.button("🚀 Iniciar Mapper IA", type="primary", use_container_width=True):
+            if st.button("🚀 Iniciar Mapper IA", type="primary", width="stretch"):
                 st.session_state.mass_upload_tipo = "Smart"
                 st.session_state.mass_upload_step = 2
                 st.rerun()
@@ -236,7 +236,7 @@ def render_paso3_validacion():
 
     edited_df = st.data_editor(
          current_df.style.map(highlight_invalid_cells),
-         use_container_width=True,
+         width="stretch",
          num_rows="dynamic",
          column_config=col_config,
          key="data_editor_bulk_v2"
@@ -259,11 +259,11 @@ def render_paso3_validacion():
             "⬇️ Descargar Excel Normalizado",
             data=buffer,
             file_name=f"normalizado_{tipo.lower()}.xlsx",
-            use_container_width=True
+            width="stretch"
         )
 
     with c2:
-        if st.button("🚀 Enviar a Raw", type="primary", use_container_width=True, disabled=has_errors):
+        if st.button("🚀 Enviar a Raw", type="primary", width="stretch", disabled=has_errors):
             from ..services.state_manager import add_to_staging
             records = edited_df.to_dict('records')
             # Inyectar origen y unificar campo cliente

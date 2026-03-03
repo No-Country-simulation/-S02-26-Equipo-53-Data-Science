@@ -104,7 +104,7 @@ def search_inventory_fuzzy(dictated_name: str, limit: int = 5) -> list:
             # 3. Por cada match rescatado, traer sus variantes reales de la BD
             for match_name, score in mejores_matches:
                 query_variantes = sql.SQL('''
-                    SELECT id_producto, talla, color, precio_venta_unitario, stock_actual 
+                    SELECT id_producto, talla, color, precio_venta_unitario, stock_actual, categoria 
                     FROM {}.inventario_raw
                     WHERE producto = %s AND stock_actual > 0
                 ''').format(sql.Identifier(schema))
@@ -118,7 +118,8 @@ def search_inventory_fuzzy(dictated_name: str, limit: int = 5) -> list:
                         "talla": v[1],
                         "color": v[2],
                         "precio": float(v[3]) if v[3] else 0.0,
-                        "stock_actual": int(v[4])
+                        "stock_actual": int(v[4]),
+                        "categoria": v[5]
                     })
                     
                 resultados_completos.append({
@@ -271,13 +272,13 @@ def get_product_variants(product_name):
     try:
         with conn.cursor() as cursor:
             query = sql.SQL('''
-                SELECT id_producto, talla, color, stock_actual, precio_venta_unitario
+                SELECT id_producto, talla, color, stock_actual, precio_venta_unitario, categoria
                 FROM {}.inventario_raw
                 WHERE producto = %s AND stock_actual > 0
             ''').format(sql.Identifier(schema))
             cursor.execute(query, (product_name,))
             res = cursor.fetchall()
-            return [{"id_producto": r[0], "talla": r[1], "color": r[2], "stock_actual": r[3], "precio": float(r[4]) if r[4] else 0.0} for r in res]
+            return [{"id_producto": r[0], "talla": r[1], "color": r[2], "stock_actual": r[3], "precio": float(r[4]) if r[4] else 0.0, "categoria": r[5]} for r in res]
     except Exception as e:
         logError(f"Error en get_product_variants: {e}")
         return []

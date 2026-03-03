@@ -60,7 +60,7 @@ def modal_seleccion_variante(producto_elegido):
         # El precio_venta_unitario ahora se arrastra del inventario y no se puede guardar un override en la transacción
         precio_venta = st.number_input("Precio de Venta (S/)", value=precio_base, disabled=True, help="El precio base se ha predefinido en el inventario.")
         
-    if st.button("Añadir", type="primary", use_container_width=True):
+    if st.button("Añadir", type="primary", width="stretch"):
         nuevo_item = {
             "id_producto": int(variante_info['id_producto']),
             "producto": producto_elegido,
@@ -142,7 +142,7 @@ def render_matriz_productos():
                         st.markdown(f"<span style='color:{stock_color}; font-weight:bold; font-size: 0.8rem;'>{stock_label} ({stock})</span>", unsafe_allow_html=True)
                         st.caption(f"📁 {cat}")
                         
-                        if st.button("➕", key=f"btn_{nombre}", use_container_width=True):
+                        if st.button("➕", key=f"btn_{nombre}", width="stretch"):
                             st.session_state.current_cat = cat
                             modal_seleccion_variante(nombre)
 
@@ -159,7 +159,7 @@ def render_checkout_y_cliente():
     edited_carrito = st.data_editor(
         df_carrito,
         num_rows="dynamic",
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config={
             "producto": st.column_config.TextColumn("Producto", disabled=True),

@@ -16,7 +16,7 @@ def render_owner_dashboard():
 
     # --- PESTAÑAS DE REVISIÓN ---
     tab_ventas, tab_inventario, tab_clientes, tab_historial = st.tabs([
-        "📥 Ventas Pendientes (Raw)", 
+        "📥 Consolidado de Ventas (Raw)", 
         "📦 Inventario Pendiente (Raw)",
         "👥 Clientes Nuevos (Raw)",
         "📊 Historial de BD"
@@ -24,35 +24,35 @@ def render_owner_dashboard():
 
     with tab_ventas:
         if st.session_state.staging_ventas.empty:
-            st.info("No hay ventas pendientes de revisión en este momento.")
+            st.info("No hay ventas en el consolidado en este momento.")
         else:
-            st.warning("⚠️ Revisa y edita las celdas antes de guardar en la base de datos.")
+            st.info("📋 Vista consolidada de ventas listas para enviar a la base de datos (No editable).")
             
-            # Editor de Datos con validaciones implícitas
-            edited_df = st.data_editor(
+            # Visor de Datos (Solo lectura)
+            st.dataframe(
                 st.session_state.staging_ventas,
-                use_container_width=True,
-                num_rows="dynamic",
-                key="editor_ventas_staging",
+                width="stretch",
+                hide_index=True,
                 column_config={
-                    "id_producto": st.column_config.NumberColumn("ID Prod", disabled=True),
-                    "precio": st.column_config.NumberColumn("Precio", min_value=0.0, format="S/ %.2f"),
-                    "cantidad": st.column_config.NumberColumn("Cant", min_value=1),
-                    "medio_pago": st.column_config.SelectboxColumn("Pago", options=["Efectivo", "Yape", "Plin", "Tarjeta", "Transferencia"]),
-                    "origen": st.column_config.TextColumn("Origen", disabled=True)
+                    "id_producto": st.column_config.NumberColumn("ID Prod"),
+                    "precio": st.column_config.NumberColumn("Precio", format="S/ %.2f"),
+                    "cantidad": st.column_config.NumberColumn("Cant"),
+                    "medio_pago": st.column_config.TextColumn("Pago"),
+                    "origen": st.column_config.TextColumn("Origen")
                 }
             )
+            edited_df = st.session_state.staging_ventas
 
             # Botones de Acción
             c1, c2, c3 = st.columns([1, 1, 1])
             with c1:
-                if st.button("🗑️ Vaciar Listado", use_container_width=True):
+                if st.button("🗑️ Vaciar Listado", width="stretch"):
                     from modules.ingesta_ventas.services.state_manager import clear_staging
                     clear_staging("ventas")
                     st.rerun()
             
             with c2:
-                if st.button("🔮 Auditar con IA", use_container_width=True):
+                if st.button("🔮 Auditar con IA", width="stretch"):
                     from modules.ingesta_ventas.services.extraction_service import detect_business_antipatterns
                     import json
                     
@@ -74,7 +74,7 @@ def render_owner_dashboard():
                                     st.info("💡 Sugerencia: Revisa los precios o la cantidad para este registro.")
 
             with c3:
-                if st.button("✅ Confirmar y Guardar todo", type="primary", use_container_width=True):
+                if st.button("✅ Confirmar y Guardar todo", type="primary", width="stretch"):
                     # Lógica de persistencia final
                     save_staging_ventas(edited_df)
 
@@ -82,8 +82,8 @@ def render_owner_dashboard():
         if st.session_state.staging_inventario.empty:
             st.info("No hay actualizaciones de inventario pendientes.")
         else:
-            edited_inv = st.data_editor(st.session_state.staging_inventario, use_container_width=True, key="editor_inv_staging")
-            if st.button("🚀 Confirmar Carga de Inventario", type="primary", use_container_width=True):
+            edited_inv = st.data_editor(st.session_state.staging_inventario, width="stretch", key="editor_inv_staging")
+            if st.button("🚀 Confirmar Carga de Inventario", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import upsert_inventory_bulk
                 res = upsert_inventory_bulk(edited_inv.to_dict('records'))
                 if res["success"]:
@@ -97,8 +97,8 @@ def render_owner_dashboard():
             st.info("No hay clientes pendientes de registro.")
         else:
             # En Clientes, solemos querer upsert o simplemente ignorar si ya existen
-            edited_cli = st.data_editor(st.session_state.staging_clientes, use_container_width=True, key="editor_cli_staging")
-            if st.button("💾 Registrar Clientes Seleccionados", type="primary", use_container_width=True):
+            edited_cli = st.data_editor(st.session_state.staging_clientes, width="stretch", key="editor_cli_staging")
+            if st.button("💾 Registrar Clientes Seleccionados", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import insert_new_client
                 success_count = 0
                 for c in edited_cli.to_dict('records'):

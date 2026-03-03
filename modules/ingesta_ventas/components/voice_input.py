@@ -58,7 +58,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                 start_prompt="🎤 Dictar",
                 stop_prompt="⏹️ Grabar",
                 just_once=True, 
-                use_container_width=True,
+                width="stretch",
                 key=f"{key}_recorder"
             )
             
@@ -68,7 +68,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                 st.session_state[t_key] = (current_text + " " + audio_text).strip()
 
         with c2:
-            if st.button("🗑️ Limpiar", use_container_width=True, key=f"{key}_clear"):
+            if st.button("🗑️ Limpiar", width="stretch", key=f"{key}_clear"):
                 st.session_state[t_key] = ""
                 st.session_state.voice_state = "idle"
                 st.session_state.voice_extracted_items = []
@@ -76,7 +76,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
 
         with c3:
             current_val = st.session_state.get(t_key, "")
-            if st.button("🚀 Analizar con IA", key="btn_ia", use_container_width=True, disabled=not current_val):
+            if st.button("🚀 Analizar con IA", key="btn_ia", width="stretch", disabled=not current_val):
                 st.session_state.voice_state = "processing"
 
         # AHORA instanciamos el text_area en el placeholder
@@ -313,14 +313,14 @@ def voice_input_component(key="voice_input", language="es-ES"):
 
         col_f1, col_f2 = st.columns(2)
         with col_f1:
-            if st.button("🔄 Corregir Texto", use_container_width=True):
+            if st.button("🔄 Corregir Texto", width="stretch"):
                 st.session_state.voice_state = "idle"
                 st.rerun()
         with col_f2:
             items_para_carrito_indices = [idx for idx, it in enumerate(st.session_state.voice_extracted_items) if it.get("validado")]
             label_btn = f"🛒 Añadir {len(items_para_carrito_indices)} items al Carrito"
             
-            if st.button(label_btn, type="primary", use_container_width=True, disabled=not items_para_carrito_indices):
+            if st.button(label_btn, type="primary", width="stretch", disabled=not items_para_carrito_indices):
                 if 'carrito' not in st.session_state: st.session_state.carrito = []
                 temp_items = []
                 

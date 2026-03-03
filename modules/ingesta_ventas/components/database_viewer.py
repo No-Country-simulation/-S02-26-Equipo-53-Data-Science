@@ -68,7 +68,7 @@ def render_db_tab():
                         
                         # Mostrar como dataframe
                         df_cols = pd.DataFrame(columns, columns=["Columna", "Tipo", "Nullable"])
-                        st.dataframe(df_cols, use_container_width=True, hide_index=True)
+                        st.dataframe(df_cols, width="stretch", hide_index=True)
 
         except Exception as e:
             st.error(f"Error al listar tablas: {e}")
@@ -88,7 +88,7 @@ def render_db_tab():
                 with psycopg2.connect(conn_uri) as conn:
                     df = pd.read_sql_query(query, conn)
                     st.success(f"Consulta ejecutada exitosamente. Filas retornadas: {len(df)}")
-                    st.dataframe(df, use_container_width=True)
+                    st.dataframe(df, width="stretch")
 
         except psycopg2.OperationalError as e:
             st.error(f"❌ Error de Conexión: No se pudo conectar a la base de datos.\n\nDetalle: {e}")
