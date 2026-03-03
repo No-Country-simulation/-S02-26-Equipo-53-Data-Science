@@ -24,6 +24,10 @@ def voice_input_component(key="voice_input", language="es-ES"):
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3);
         }
+        div.stButton > button.st-key-btn_ia:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3);
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -58,7 +62,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                 start_prompt="🎤 Dictar",
                 stop_prompt="⏹️ Grabar",
                 just_once=True, 
-                width="stretch",
+                use_container_width=True,
                 key=f"{key}_recorder"
             )
             
