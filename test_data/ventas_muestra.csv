@@ -1,0 +1,6 @@
+producto,cantidad,color,talla,precio,nombre_cliente,medio_pago,fecha_registro
+Polo Deportivo,2,Azul,M,45.0,Juan Perez,Yape,2024-03-01
+Zapatilla Nike,1,Negro,42,299.9,Maria Garcia,Plin,2024-03-01
+Pantalón Jean,3,Celeste,32,85.0,Anónimo,Efectivo,2024-03-02
+Bota de Seguridad,1,Marron,40,150.0,Carlos Ruiz,Tarjeta,2024-03-02
+Camisa Formal,2,Blanco,L,65.0,Elena Torres,Transferencia,2024-03-02

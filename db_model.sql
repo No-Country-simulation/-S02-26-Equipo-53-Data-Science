@@ -204,3 +204,4 @@ ON warehouse.fact_ventas(id_fecha);
 
 CREATE INDEX idx_fact_ventas_cliente
 ON warehouse.fact_ventas(id_cliente);;
+ON warehouse.fact_ventas(id_cliente);;

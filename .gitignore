@@ -118,7 +118,6 @@ venv.bak/
 # Project specific
 .gemini/
 .agent/
-libs/
 node_modules/
 .DS_Store
 
