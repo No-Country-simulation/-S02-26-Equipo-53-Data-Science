@@ -4,16 +4,26 @@ import plotly.express as px
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-
+from scripts.orchestrator import run_etl_warehouse_pipeline
 load_dotenv()
+
+
+def get_engine():
+    """Función auxiliar para centralizar la conexión."""
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASS")
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    db_name = os.getenv("DB_NAME")
+    return create_engine(f"postgresql://{user}:{password}@{host}:{port}/{db_name}")
 
 def render_dashboard():
 
     # ⚙ CONFIGURACIÓN (SOLO UNA VEZ Y AL INICIO)
     st.set_page_config(page_title="Dashboard KPIs", layout="wide")
 
-    DATABASE_URL = os.getenv("DATABASE_URL")
-    engine = create_engine(DATABASE_URL)
+    # DATABASE_URL = os.getenv("DATABASE_URL")
+    engine = get_engine()
 
     # 🎨 ESTILO GENERAL
     st.markdown("""
@@ -43,7 +53,27 @@ def render_dashboard():
     """, unsafe_allow_html=True)
 
     st.markdown("<h1>📊 Dashboard Ejecutivo de Datamark</h1>", unsafe_allow_html=True)
+    
+    
+    # ================= CONTROL PIPELINE =================
 
+    if "pipeline_running" not in st.session_state:
+        st.session_state.pipeline_running = False
+
+    col_btn1, col_btn2 = st.columns([1,4])
+
+    with col_btn1:
+        if st.button("🔄 Actualizar datos"):
+            st.session_state.pipeline_running = True
+            with st.spinner("Ejecutando pipeline..."):
+                run_etl_warehouse_pipeline()
+            st.success("Datos actualizados correctamente")
+            st.session_state.pipeline_running = False
+
+    with col_btn2:
+        st.caption("Ejecuta el pipeline antes de analizar los datos")
+    
+    
     # ================= PRIMERA FILA =================
 
     query_fechas = """
