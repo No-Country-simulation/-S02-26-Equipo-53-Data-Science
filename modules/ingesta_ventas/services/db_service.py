@@ -189,11 +189,11 @@ def insert_sales_to_db(sales_data):
                          logInfo(f"Advertencia: Producto '{sale.get('producto')}' no encontrado. Se insertará con ID NULL o 0 si es posible.")
                     
                     # 2. Insertar Venta
-                    # Schema ventas_raw: id_venta, fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga
+                    # Schema ventas_raw ampliado: id_venta, fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga, categoria, talla, color, producto_nombre
                     query_sale = sql.SQL("""
                         INSERT INTO {}.ventas_raw 
-                        (fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga)
-                        VALUES (%s, %s, %s, %s, %s, NOW())
+                        (fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga, categoria, talla, color, producto_nombre)
+                        VALUES (%s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s)
                     """).format(sql.Identifier(schema))
                     
                     # Formatear fecha si es string
@@ -206,7 +206,11 @@ def insert_sales_to_db(sales_data):
                         id_producto, # Puede ser None
                         id_cliente,  # Puede ser None
                         sale.get("cantidad", 1),
-                        sale.get("medio_pago", "Efectivo")
+                        sale.get("medio_pago", "Efectivo"),
+                        sale.get("categoria"),
+                        sale.get("talla"),
+                        sale.get("color"),
+                        sale.get("producto")
                     ))
                     
                     # 3. Rebajar Stock Automáticamente

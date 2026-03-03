@@ -146,7 +146,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                 
                 st.session_state.voice_extracted_items = resolved_items
                 st.session_state.voice_state = "reviewing"
-                status.update(label="✅ Análisis completado", state="complete")
+                status.update(label=f"✅ Análisis completado ({res.get('model', 'IA')})", state="complete")
                 st.rerun()
             else:
                 st.session_state.voice_state = "idle"
@@ -233,8 +233,13 @@ def voice_input_component(key="voice_input", language="es-ES"):
                         # --- Métricas Rápidas ---
                         c1, c2, c3 = st.columns(3)
                         with c1:
-                            cant = item['cantidad']
-                            stock = chosen_var['stock_actual']
+                            # Aseguramos que los valores no sean None para evitar TypeError
+                            cant = item.get('cantidad', 1)
+                            if cant is None: cant = 0
+                            
+                            stock = chosen_var.get('stock_actual', 0)
+                            if stock is None: stock = 0
+                            
                             color_stock = "green" if cant <= stock else "red"
                             st.markdown(f"📦 **Stock:** :{color_stock}[{stock}] ({'✅' if cant <= stock else '⚠️'})")
                         with c2:
@@ -247,7 +252,8 @@ def voice_input_component(key="voice_input", language="es-ES"):
                             else:
                                 st.markdown(f"💰 **Precio:** S/ {p_oficial:.2f}")
                         with c3:
-                            st.markdown(f"🔢 **Cant:** {cant}")
+                            new_cant = st.number_input("Cant:", min_value=1, value=max(1, int(cant)), key=f"cant_input_{i}")
+                            st.session_state.voice_extracted_items[i]["cantidad"] = new_cant
 
                         # --- CLIENTE Y MEDIO DE PAGO ---
                         st.divider()
@@ -353,12 +359,13 @@ def voice_input_component(key="voice_input", language="es-ES"):
                         "producto": chosen_match_name,
                         "talla": chosen_var["talla"],
                         "color": chosen_var["color"],
-                        "cantidad": it["cantidad"],
+                        "cantidad": it.get("cantidad", 1),
                         "precio": precio_final,
                         "cliente": it.get("cliente_final", "Anónimo"),
                         "medio_pago": it.get("pago_final", "Efectivo"),
                         "fecha_registro": it.get("fecha_registro") or datetime.date.today().strftime("%Y-%m-%d"),
-                        "origen": "Voz/IA"
+                        "origen": "Voz/IA",
+                        "categoria": chosen_var.get("categoria")
                     })
                 
                 # Enviamos todo al Raw Area Global

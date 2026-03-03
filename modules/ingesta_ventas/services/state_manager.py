@@ -9,7 +9,7 @@ def init_staging_state():
     if "staging_ventas" not in st.session_state:
         st.session_state.staging_ventas = pd.DataFrame(columns=[
             "id_producto", "producto", "talla", "color", "cantidad", 
-            "precio", "cliente", "medio_pago", "fecha_registro", "origen"
+            "precio", "cliente", "medio_pago", "fecha_registro", "origen", "categoria"
         ])
     
     if "staging_inventario" not in st.session_state:

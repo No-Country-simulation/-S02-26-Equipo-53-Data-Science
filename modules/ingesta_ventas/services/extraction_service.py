@@ -15,168 +15,142 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
+# Lista de modelos por orden de preferencia (Fallback)
+MODELS_BACKUP = [
+    "gemini-3.1-flash-preview",
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash" # El más estable
+]
+
+def _generate_with_fallback(prompt: str):
+    """
+    Intenta generar contenido con una lista de modelos hasta que uno funcione.
+    """
+    last_error = ""
+    for model_name in MODELS_BACKUP:
+        try:
+            logInfo(f"Intentando generación con modelo: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            
+            # Limpieza robusta de la respuesta
+            text = response.text.strip()
+            # Eliminar bloques de código markdown si existen
+            if "```" in text:
+                # Extraer contenido entre las primeras y últimas comillas triples
+                parts = text.split("```")
+                for p in parts:
+                    p_clean = p.strip()
+                    if p_clean.startswith("json"): p_clean = p_clean[4:].strip()
+                    if p_clean.startswith("[") or p_clean.startswith("{"):
+                        text = p_clean
+                        break
+            
+            # Validar que sea JSON parseable
+            data = json.loads(text)
+            return data, model_name
+        except Exception as e:
+            last_error = str(e)
+            logError(f"Fallo con modelo {model_name}: {e}")
+            continue
+            
+    raise Exception(f"Todos los modelos fallaron. Último error: {last_error}")
+
 def extract_sales_data(text_input: str):
     """
-    Extrae datos estructurados de ventas a partir de texto libre usando Gemini Flash.
+    Extrae datos estructurados de ventas a partir de texto libre usando multi-modelo fallback.
     """
     if not api_key:
         return {"error": "API Key no configurada"}
         
     try:
         start_time = datetime.datetime.now()
-        model = genai.GenerativeModel('gemini-2.5-flash')
         current_date = datetime.date.today().strftime("%Y-%m-%d")
         
         prompt = f"""
-        Actúa como un asistente de ventas experto. Tu tarea es extraer información estructurada de este texto de voz que puede contener UNA O MÁS ventas:
+        Actúa como un asistente de ventas experto. Extrae información estructurada de este texto:
         "{text_input}"
         
-        Debes devolver una LISTA JSON de objetos. Cada objeto representa una venta.
+        Devuelve una LISTA JSON de objetos. 
+        REGLAS:
+        1. producto_base: Solo nombre base (ej: "Polo").
+        2. talla/color: Por separado o null.
+        3. SI NO SE DICE EXPLICITAMENTE, USA null. NO INVENTES.
         
-        REGLAS CRÍTICAS:
-        1. producto_base: Extrae SOLO el nombre base del artículo (ej: si dice "Polo azul talla M", producto_base es "Polo").
-        2. talla/color: Extrae estos atributos por separado. Si no se mencionan, usa null.
-        3. Si un campo no se menciona EXPLÍCITAMENTE, usa null. NO INVENTES DATOS.
-        4. medio_pago: Solo extrae si el usuario dice algo como "pagó con yape", "en efectivo", etc.
+        Campos: producto_base, talla, color, cantidad, precio, nombre_cliente, ubicacion_cliente, genero, medio_pago, fecha_registro (hoy es {current_date}).
         
-        Campos por objeto:
-        - producto_base: string (Nombre del artículo)
-        - talla: string/number o null
-        - color: string o null
-        - cantidad: integer (default 1)
-        - precio: number o null
-        - nombre_cliente: string o null
-        - ubicacion_cliente: string o null
-        - genero: string o null (M/F/U)
-        - medio_pago: string o null
-        - fecha_registro: string (YYYY-MM-DD, hoy es {current_date})
-
-        Responde SOLO con la LISTA JSON. Sin bloques de código markdown.
+        Responde SOLO con la LISTA JSON. Sin bloques de markdown.
         """
         
-        response = model.generate_content(prompt)
-        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        data = json.loads(cleaned_text)
+        data, used_model = _generate_with_fallback(prompt)
         
         if isinstance(data, dict):
             data = [data]
             
-        return {"data": data, "duration": (datetime.datetime.now() - start_time).total_seconds()}
+        return {
+            "data": data, 
+            "model": used_model,
+            "duration": (datetime.datetime.now() - start_time).total_seconds()
+        }
 
     except Exception as e:
-        logError(f"Error en extracción con Gemini: {e}")
-        return {"error": str(e), "duration": 0}
-
-    except Exception as e:
-        logError(f"Error en extracción con Gemini: {e}")
+        logError(f"Error total en extracción: {e}")
         return {"error": str(e), "duration": 0}
 
 def suggest_column_mapping(user_columns: list, required_columns: list) -> dict:
     """
-    Usa Gemini para sugerir un emparejamiento entre las columnas del Excel subido 
-    y las columnas obligatorias de la tabla destino.
+    Sugerencia de mapeo con fallback.
     """
     if not api_key:
         return {}
         
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = f"""
-        Actúa como un ingeniero de datos. Tienes dos listas de nombres de columnas.
-        
-        Columnas Requeridas en BD: {required_columns}
-        Columnas encontradas en el archivo del usuario: {user_columns}
-        
-        Empareja cada 'Columna Requerida' con la columna del usuario que semánticamente tenga más sentido.
-        Si para una Columna Requerida no hay ninguna columna del usuario que encaje, ignórala (no la incluyas en el output).
-        
-        Devuelve SOLO un JSON donde las CLAVES son los nombres exactos de las "Columnas Requeridas en BD"
-        y los VALORES son los nombres exactos de las "Columnas encontradas en el archivo del usuario".
-        
-        Ejemplo si requieres ["producto", "cantidad"] y el usuario subió ["Articulo_nombre", "cuantos_vendidos", "fecha"]:
-        {{"producto": "Articulo_nombre", "cantidad": "cuantos_vendidos"}}
-        
-        Prohibido usar markdown, solo el JSON puro.
+        Empareja Columnas Requeridas {required_columns} con Columnas Usuario {user_columns}.
+        Devuelve SOLO JSON {{ "req": "user" }}.
         """
-        response = model.generate_content(prompt)
-        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        data = json.loads(cleaned_text)
-        return {"mapping": getattr(data, 'mapping', data)} # En caso de que devuelva root dict
+        data, _ = _generate_with_fallback(prompt)
+        return {"mapping": data}
     except Exception as e:
-        logError(f"Error sugiriendo mapeo con Gemini: {e}")
+        logError(f"Error en mapeo IA: {e}")
         return {"mapping": {}}
 
 def extract_product_attributes_batch(products: list) -> dict:
     """
-    Recibe una lista de descripciones de productos (ej: "Zapatilla Urbana Blanca Talla 40")
-    y devuelve una lista de diccionarios con (nombre_limpio, talla, color) inferidos.
+    Desempaqueta atributos en lote con fallback.
     """
     if not api_key or not products:
         return {"data": []}
         
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
         prompt = f"""
-        Actúa como un experto en catalogación de e-commerce. Recibirás una lista de cadenas de texto 
-        que los usuarios escriben para describir productos de ropa o calzado.
-        
-        Tu tarea es "desempaquetar" cada cadena en 3 atributos:
-        1. "producto_base": El nombre limpio del artículo (sin talla ni color). Ej: "Zapatilla Urbana Nike".
-        2. "talla": La talla encontrada (texto o número, ej: "S", "M", "L", "XL", "38", "42"). Si no hay, null.
-        3. "color": El color predominante (ej: "Blanca", "Negro", "Azul"). Si no hay, null.
-        
-        Lista de entrada:
+        Desempaqueta esta lista de productos en producto_base, talla y color:
         {json.dumps(products, ensure_ascii=False)}
-        
-        Devuelve una lista JSON con el mismo orden exacto, donde cada objeto tenga:
-        {{"original": "cadena original", "producto_base": "...", "talla": "...", "color": "..."}}
-        
-        SOLO JSON, sin etiquetas markdown.
+        Devuelve lista JSON de objetos con "original", "producto_base", "talla", "color".
         """
-        response = model.generate_content(prompt)
-        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        data = json.loads(cleaned_text)
+        data, _ = _generate_with_fallback(prompt)
         return {"data": data}
     except Exception as e:
-        logError(f"Error desempaquetando atributos con Gemini: {e}")
+        logError(f"Error en desempaque lote IA: {e}")
         return {"data": []}
 
 def detect_business_antipatterns(sales_df_json: str):
     """
-    Usa Gemini para auditar un listado de ventas en staging y detectar anomalías de negocio.
+    Auditoría de negocio con fallback.
     """
     if not api_key:
         return {"warnings": []}
         
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
         prompt = f"""
-        Actúa como un Auditor de Negocios y Experto en Control de Pérdidas.
-        Analiza este listado de ventas (en formato JSON) que están a punto de registrarse:
-        
+        Audita este JSON de ventas y detecta anomalías (precios raros, duplicados, etc):
         "{sales_df_json}"
-        
-        Tu objetivo es detectar "Antipatrones de Negocio" o anomalías. Ejemplos:
-        - Ventas con precio 0 o excesivamente bajo/alto comparado con otros items similares.
-        - Cantidades inusualmente grandes para un solo cliente.
-        - Mismo cliente comprando el mismo item varias veces en segundos (posible duplicidad).
-        - Advertencias sobre clientes "Anónimos" recurrentes que deberían ser registrados.
-        
-        Para cada anomalía encontrada, devuelve un objeto JSON con:
-        1. "gravedad": "Alta", "Media" o "Baja".
-        2. "mensaje": Una explicación breve de qué está mal.
-        3. "consecuencia": Qué impacto tiene esto para el dueño (ej: "Pérdida de margen", "Error de inventario").
-        
-        Responde SOLO con una LISTA JSON de estos objetos. Si no hay anomalías, devuelve una lista vacía [].
+        Devuelve lista JSON con "gravedad", "mensaje", "consecuencia".
         """
-        
-        response = model.generate_content(prompt)
-        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
-        warnings = json.loads(cleaned_text)
+        warnings, _ = _generate_with_fallback(prompt)
         return {"warnings": warnings}
     except Exception as e:
         logError(f"Error en auditoría IA: {e}")
-        return {"warnings": [{"gravedad": "Baja", "mensaje": "No se pudo completar la auditoría IA.", "consecuencia": "Revisión manual requerida."}]}
+        return {"warnings": []}
 

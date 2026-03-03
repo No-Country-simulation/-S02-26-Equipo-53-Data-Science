@@ -139,7 +139,8 @@ def save_staging_ventas(df):
             "precio": s.get("precio"),
             "nombre_cliente": s.get("cliente"),
             "medio_pago": s.get("medio_pago"),
-            "fecha_registro": s.get("fecha_registro")
+            "fecha_registro": s.get("fecha_registro"),
+            "categoria": s.get("categoria")
         })
 
     with st.spinner("Guardando en base de datos..."):

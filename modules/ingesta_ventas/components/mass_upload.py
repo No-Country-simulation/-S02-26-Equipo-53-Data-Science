@@ -176,9 +176,9 @@ def render_paso3_validacion():
                     df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0).astype(int)
 
             # --- Limpieza IA (Solo si faltan atributos críticos) ---
-            if tipo == "Inventario":
+            if tipo in ["Inventario", "Ventas", "Smart"]:
                 st.write("🤖 Gemini analizando descripciones de productos...")
-                necesita_ia = df_clean['talla'].isna().all() or df_clean['color'].isna().all()
+                necesita_ia = df_clean.get('talla', pd.Series()).isna().all() or df_clean.get('color', pd.Series()).isna().all()
                 if necesita_ia and len(df_clean) <= 150:
                     unique_names = df_clean['producto'].dropna().unique().tolist()
                     extracted_data = extract_product_attributes_batch(unique_names).get("data", [])
@@ -230,7 +230,8 @@ def render_paso3_validacion():
     else:
         col_config.update({
             "cantidad": st.column_config.NumberColumn("Cant.", min_value=1),
-            "precio": st.column_config.NumberColumn("Precio (S/)", min_value=0.0, format="S/ %.2f")
+            "precio": st.column_config.NumberColumn("Precio (S/)", min_value=0.0, format="S/ %.2f"),
+            "categoria": st.column_config.TextColumn("Categoría")
         })
 
     edited_df = st.data_editor(
