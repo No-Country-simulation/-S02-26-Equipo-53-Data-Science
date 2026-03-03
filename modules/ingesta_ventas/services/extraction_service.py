@@ -15,64 +15,142 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
+# Lista de modelos por orden de preferencia (Fallback)
+MODELS_BACKUP = [
+    "gemini-3.1-flash-preview",
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash" # El más estable
+]
+
+def _generate_with_fallback(prompt: str):
+    """
+    Intenta generar contenido con una lista de modelos hasta que uno funcione.
+    """
+    last_error = ""
+    for model_name in MODELS_BACKUP:
+        try:
+            logInfo(f"Intentando generación con modelo: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            
+            # Limpieza robusta de la respuesta
+            text = response.text.strip()
+            # Eliminar bloques de código markdown si existen
+            if "```" in text:
+                # Extraer contenido entre las primeras y últimas comillas triples
+                parts = text.split("```")
+                for p in parts:
+                    p_clean = p.strip()
+                    if p_clean.startswith("json"): p_clean = p_clean[4:].strip()
+                    if p_clean.startswith("[") or p_clean.startswith("{"):
+                        text = p_clean
+                        break
+            
+            # Validar que sea JSON parseable
+            data = json.loads(text)
+            return data, model_name
+        except Exception as e:
+            last_error = str(e)
+            logError(f"Fallo con modelo {model_name}: {e}")
+            continue
+            
+    raise Exception(f"Todos los modelos fallaron. Último error: {last_error}")
+
 def extract_sales_data(text_input: str):
     """
-    Extrae datos estructurados de ventas a partir de texto libre usando Gemini Flash.
+    Extrae datos estructurados de ventas a partir de texto libre usando multi-modelo fallback.
     """
     if not api_key:
         return {"error": "API Key no configurada"}
         
     try:
         start_time = datetime.datetime.now()
-        # Usar modelo estable disponible
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
         current_date = datetime.date.today().strftime("%Y-%m-%d")
         
         prompt = f"""
-        Actúa como un asistente de ventas experto. Tu tarea es extraer información estructurada de este texto de voz que puede contener UNA O MÁS ventas:
+        Actúa como un asistente de ventas experto. Extrae información estructurada de este texto:
         "{text_input}"
         
-        Debes devolver una LISTA JSON de objetos. Cada objeto representa una venta.
-        Si un campo no se menciona, usa null (o estimaciones lógicas basadas en el contexto).
+        Devuelve una LISTA JSON de objetos. 
+        REGLAS:
+        1. producto_base: Solo nombre base (ej: "Polo").
+        2. talla/color: Por separado o null.
+        3. SI NO SE DICE EXPLICITAMENTE, USA null. NO INVENTES.
         
-        Campos por objeto:
-        - producto: string (Nombre del producto vendido)
-        - categoria: string (Categoría inferida, ej: Ropa, Tecnología, Alimentos, etc.)
-        - cantidad: integer (default 1)
-        - talla: string (S, M, L, o números como 38, 42, 38.5, null si no aplica)
-        - color: string (null si no aplica)
-        - precio: float (0.0 si no se dice)
-        - nombre_cliente: string (Nombre del cliente o "Anónimo")
-        - ubicacion_cliente: string (Ciudad/Distrito inferido o "Desconocido")
-        - genero: string (M/F/U, inferido según el producto o cliente)
-        - medio_pago: string (Efectivo, Yape, Plin, Transferencia, Tarjeta, etc. Inferido o "Efectivo")
-        - fecha_registro: string (YYYY-MM-DD, hoy es {current_date})
-
-        Ejemplo de salida:
-        [
-            {{"producto": "Polo Rojo", "categoria": "Ropa", "cantidad": 2, "talla": "M", "color": "Rojo", "precio": 50.0, "nombre_cliente": "Juan", "ubicacion_cliente": "Lima", "genero": "M", "medio_pago": "Yape", "fecha_registro": "{current_date}"}},
-            {{"producto": "Laptop", "categoria": "Tecnología", "cantidad": 1, "talla": null, "color": "Gris", "precio": 1500.0, "nombre_cliente": "Maria", "ubicacion_cliente": "Arequipa", "genero": "F", "medio_pago": "Tarjeta", "fecha_registro": "{current_date}"}}
-        ]
-
-        Responde SOLO con la LISTA JSON. Sin bloques de código markdown.
+        Campos: producto_base, talla, color, cantidad, precio, nombre_cliente, ubicacion_cliente, genero, medio_pago, fecha_registro (hoy es {current_date}).
+        
+        Responde SOLO con la LISTA JSON. Sin bloques de markdown.
         """
         
-        response = model.generate_content(prompt)
-        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
+        data, used_model = _generate_with_fallback(prompt)
         
-        data = json.loads(cleaned_text)
-        
-        # Asegurar que sea una lista
         if isinstance(data, dict):
             data = [data]
             
-        end_time = datetime.datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        
-        logInfo(f"Datos extraídos en {duration:.2f}s: {len(data)} registros")
-        return {"data": data, "duration": duration}
+        return {
+            "data": data, 
+            "model": used_model,
+            "duration": (datetime.datetime.now() - start_time).total_seconds()
+        }
 
     except Exception as e:
-        logError("Error en extracción con Gemini", e)
+        logError(f"Error total en extracción: {e}")
         return {"error": str(e), "duration": 0}
+
+def suggest_column_mapping(user_columns: list, required_columns: list) -> dict:
+    """
+    Sugerencia de mapeo con fallback.
+    """
+    if not api_key:
+        return {}
+        
+    try:
+        prompt = f"""
+        Empareja Columnas Requeridas {required_columns} con Columnas Usuario {user_columns}.
+        Devuelve SOLO JSON {{ "req": "user" }}.
+        """
+        data, _ = _generate_with_fallback(prompt)
+        return {"mapping": data}
+    except Exception as e:
+        logError(f"Error en mapeo IA: {e}")
+        return {"mapping": {}}
+
+def extract_product_attributes_batch(products: list) -> dict:
+    """
+    Desempaqueta atributos en lote con fallback.
+    """
+    if not api_key or not products:
+        return {"data": []}
+        
+    try:
+        prompt = f"""
+        Desempaqueta esta lista de productos en producto_base, talla y color:
+        {json.dumps(products, ensure_ascii=False)}
+        Devuelve lista JSON de objetos con "original", "producto_base", "talla", "color".
+        """
+        data, _ = _generate_with_fallback(prompt)
+        return {"data": data}
+    except Exception as e:
+        logError(f"Error en desempaque lote IA: {e}")
+        return {"data": []}
+
+def detect_business_antipatterns(sales_df_json: str):
+    """
+    Auditoría de negocio con fallback.
+    """
+    if not api_key:
+        return {"warnings": []}
+        
+    try:
+        prompt = f"""
+        Audita este JSON de ventas y detecta anomalías (precios raros, duplicados, etc):
+        "{sales_df_json}"
+        Devuelve lista JSON con "gravedad", "mensaje", "consecuencia".
+        """
+        warnings, _ = _generate_with_fallback(prompt)
+        return {"warnings": warnings}
+    except Exception as e:
+        logError(f"Error en auditoría IA: {e}")
+        return {"warnings": []}
+
