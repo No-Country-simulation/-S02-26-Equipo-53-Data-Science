@@ -1,3 +1,4 @@
+import streamlit as st
 from modules.ingesta_ventas.app import main
 
 if __name__ == "__main__":
