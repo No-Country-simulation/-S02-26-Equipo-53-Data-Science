@@ -24,17 +24,18 @@ def download_template_btn(tipo: str):
     elif tipo == "Ventas": cols = TEMPLATE_VENTAS
     else: cols = TEMPLATE_CLIENTES
     df_template = pd.DataFrame(columns=cols)
-    buffer = io.BytesIO()
-    df_template.to_csv(buffer, index=False, encoding='utf-8')
-    buffer.seek(0)
+    
+    # Extraemos el CSV crudo al instante para que Streamlit guarde en caché los bytes
+    # y no pierda la referencia (MediaFileStorageError)
+    csv_bytes = df_template.to_csv(index=False).encode('utf-8')
     
     st.download_button(
         label=f"⬇️ Descargar Plantilla '{tipo}' (Recomendado)",
-        data=buffer,
+        data=csv_bytes,
         file_name=f"plantilla_{tipo.lower()}_datamark.csv",
         mime="text/csv",
         type="secondary",
-        width="stretch"
+        use_container_width=True
     )
 
 def highlight_invalid_cells(val):
@@ -334,9 +335,10 @@ def render_paso3_validacion():
         edited_df.to_excel(buffer, index=False)
         st.download_button(
             "⬇️ Descargar Excel Normalizado",
-            data=buffer,
+            data=buffer.getvalue(),  # Extraemos bytes para no corromper la caché de URL
             file_name=f"normalizado_{tipo.lower()}.xlsx",
-            width="stretch"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
         )
 
     with c2:
