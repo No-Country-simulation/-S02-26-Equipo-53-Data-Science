@@ -235,8 +235,8 @@ def insert_sales_to_db(sales_data):
                     
                     query_sale = sql.SQL("""
                         INSERT INTO {}.ventas_raw 
-                        (fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga, categoria, talla, color, producto_nombre)
-                        VALUES (%s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s)
+                        (fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga)
+                        VALUES (%s, %s, %s, %s, %s, NOW())
                     """).format(sql.Identifier(schema))
                     
                     fecha_venta = sale.get("fecha_registro")
@@ -248,11 +248,7 @@ def insert_sales_to_db(sales_data):
                         id_producto,
                         id_cliente,
                         cantidad,
-                        sale.get("medio_pago", "Efectivo"),
-                        sale.get("categoria"),
-                        sale.get("talla"),
-                        sale.get("color"),
-                        prod_name
+                        sale.get("medio_pago", "Efectivo")
                     ))
                     
                     inserted_count += 1
