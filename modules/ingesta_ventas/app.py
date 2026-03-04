@@ -5,18 +5,13 @@ import os
 import sys
 import os
 
-# Agregamos la carpeta libs local al path para cargar dependencias instaladas localmente
-# Esto es necesario porque el entorno global de Python en C: a veces no tiene permisos o espacio
-libs_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'libs')
-sys.path.insert(0, libs_path) # Insertar al principio para prioridad
+# Calculamos la raíz del proyecto de forma absoluta (sin '..') para evitar KeyError en Streamlit Cloud
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# También agregamos la raíz del proyecto para imports relativos desde otros módulos
-project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 if project_root not in sys.path:
-    sys.path.append(project_root)
+    sys.path.insert(0, project_root)
 
-print(f"DEBUG: sys.path includes libs at: {libs_path}")
-print(f"DEBUG: libs exists? {os.path.exists(libs_path)}")
+
 
 from libs.logger import logInfo, logSequence, logError
 from .services.state_manager import init_staging_state
