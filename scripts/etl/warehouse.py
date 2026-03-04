@@ -99,6 +99,14 @@ def load_dimensions(engine):
             fecha_registro,
             canal_preferido
         )
+        SELECT 
+            0, 
+            'Anónimo', 
+            'Desconocido', 
+            'N/A', 
+            CURRENT_DATE, 
+            'Ninguno'
+        UNION
         SELECT DISTINCT
             id_cliente,
             nombre_cliente,
