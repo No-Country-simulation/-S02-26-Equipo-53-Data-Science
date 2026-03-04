@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 from streamlit_mic_recorder import speech_to_text
-from libs.logger import logInfo, logError, logSequence
+from libs.logger import logInfo, logError, logSequence, logWarn
 from ..services.extraction_service import extract_sales_data
 from ..services.db_service import search_inventory_fuzzy
 from ..services.state_manager import add_to_staging
