@@ -6,3 +6,5 @@ plotly==6.5.2
 psycopg2-binary==2.9.11
 streamlit-mic-recorder
 google-generativeai
+thefuzz
+python-Levenshtein
