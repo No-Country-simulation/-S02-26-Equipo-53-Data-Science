@@ -112,8 +112,28 @@ def search_inventory_fuzzy(dictated_name: str, limit: int = 5) -> list:
             if not productos_unicos:
                 return []
                 
-            # 2. Hacer Fuzzy Match. Extract_Bests devuelve (nombre, score)
-            mejores_matches = process.extractBests(dictated_name, productos_unicos, limit=limit, score_cutoff=50)
+            # 2. Lógica Híbrida: Substring Match + Fuzzy Match
+            dictated_lower = dictated_name.lower().strip()
+            
+            # Primero buscamos coincidencias directas por substring (Ej: "Polo" en "Polo Algodón Premium")
+            substring_matches = []
+            for p in productos_unicos:
+                if dictated_lower in p.lower():
+                    # Le damos score alto artificialmente (ej. 90) a las coincidencias directas
+                    substring_matches.append((p, 90))
+                    
+            # Luego buscamos aproximaciones fonéticas/tipeo con thefuzz (Score bajado de 50 a 40 para ser más tolerante)
+            fuzzy_matches = process.extractBests(dictated_name, productos_unicos, limit=limit, score_cutoff=40)
+            
+            # Combinamos ambos sets de resultados sin duplicados
+            combined_matches_dict = {}
+            for name, score in (substring_matches + (fuzzy_matches or [])):
+                # Si el producto ya está en el diccionario, nos quedamos con el score más alto
+                if name not in combined_matches_dict or score > combined_matches_dict[name]:
+                    combined_matches_dict[name] = score
+                    
+            # Ordenamos por score descendente y aplicamos el límite
+            mejores_matches = sorted(combined_matches_dict.items(), key=lambda x: x[1], reverse=True)[:limit]
             
             if not mejores_matches:
                 return []
