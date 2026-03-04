@@ -9,8 +9,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Añadir la raíz al path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Añadir la raíz al path de forma absoluta (Fix para la nube)
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
 
 try:
     from modules.gestion_dueño.app import main
