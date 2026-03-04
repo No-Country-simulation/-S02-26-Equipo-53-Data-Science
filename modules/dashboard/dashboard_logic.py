@@ -87,6 +87,11 @@ def render_dashboard():
     fecha_min = df_fechas["fecha_min"][0]
     fecha_max = df_fechas["fecha_max"][0]
 
+    if pd.isna(fecha_min) or pd.isna(fecha_max):
+        st.warning("⚠️ No hay datos de ventas en el Data Warehouse. Por favor, ve a la pestaña de Ingesta, sube algunas ventas, y luego pulsa 'Actualizar datos' aquí arriba.")
+        st.stop()
+        return
+
     fecha_seleccion = st.date_input(
         "📅 Selecciona rango de fechas",
         value=(fecha_min, fecha_max),
@@ -174,21 +179,21 @@ def render_dashboard():
             st.subheader("📈 Ventas por Fecha")
             fig_linea = px.line(df_linea, x="id_fecha", y="ventas_diarias", markers=True)
             fig_linea.update_layout(height=450)
-            st.plotly_chart(fig_linea, use_container_width=True)
+            st.plotly_chart(fig_linea, use_container_width=True, key="fig_linea")
 
     with colB:
         with st.container(border=True):
             st.subheader("🔥 Top 10 Productos")
             fig_top = px.bar(df_top, x="ventas_totales", y="producto", orientation="h")
             fig_top.update_layout(height=450, yaxis=dict(categoryorder="total ascending"))
-            st.plotly_chart(fig_top, use_container_width=True)
+            st.plotly_chart(fig_top, use_container_width=True, key="fig_top")
 
     with colC:
         with st.container(border=True):
             st.subheader("📉 Productos Menos Vendidos")
             fig_bottom = px.bar(df_bottom, x="ventas_totales", y="producto", orientation="h")
             fig_bottom.update_layout(height=450, yaxis=dict(categoryorder="total ascending"))
-            st.plotly_chart(fig_bottom, use_container_width=True)
+            st.plotly_chart(fig_bottom, use_container_width=True, key="fig_bottom")
 
     st.divider()
 
@@ -243,19 +248,19 @@ def render_dashboard():
         with st.container(border=True):
             st.subheader("🥧 Ventas Totales por Categoría")
             fig_categoria.update_layout(height=450)
-            st.plotly_chart(fig_categoria, use_container_width=True)
+            st.plotly_chart(fig_categoria, use_container_width=True, key="fig_categoria")
 
     with colY:
         with st.container(border=True):
             st.subheader("📊 Ventas por Talla")
             fig_talla.update_layout(height=450)
-            st.plotly_chart(fig_talla, use_container_width=True)
+            st.plotly_chart(fig_talla, use_container_width=True, key="fig_talla")
 
     with colZ:
         with st.container(border=True):
             st.subheader("🍩 Ventas por Color")
             fig_color.update_layout(height=450)
-            st.plotly_chart(fig_color, use_container_width=True)
+            st.plotly_chart(fig_color, use_container_width=True, key="fig_color")
 
     st.divider()
     st.write("Datos en tiempo real desde la base de datos 🚀")
