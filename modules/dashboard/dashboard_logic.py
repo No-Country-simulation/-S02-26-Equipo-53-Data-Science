@@ -29,25 +29,35 @@ def render_dashboard():
     st.markdown("""
         <style>
             .main {
-                background-color: #EEF2F6;
+                /* Let Streamlit handle main background */
             }
             h1 {
                 text-align: center;
                 font-weight: 700;
+                color: white;
             }
             .stMetric {
-                background-color: white;
+                background-color: #262730; /* Dark theme card background */
                 padding: 15px;
                 border-radius: 10px;
-                box-shadow: 0px 2px 6px rgba(0,0,0,0.08);
+                box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
+            }
+            .stMetric label {
+                color: #A0AAB2 !important; /* Lighter grey for metric label */
+            }
+            div[data-testid="stMetricValue"] {
+                color: white !important; /* Force white for the number */
             }
             div[data-testid="stContainer"] {
-                background-color: white;
+                background-color: #262730;
                 padding: 25px;
                 border-radius: 14px;
-                border: 1px solid #E0E0E0;
-                box-shadow: 0px 6px 18px rgba(0,0,0,0.08);
+                border: 1px solid #3d3d4e;
+                box-shadow: 0px 6px 18px rgba(0,0,0,0.3);
                 margin-bottom: 25px;
+            }
+            div[data-testid="stContainer"] h3 {
+                color: #60B4FF !important; /* Light blue for container headers */
             }
         </style>
     """, unsafe_allow_html=True)
@@ -117,7 +127,7 @@ def render_dashboard():
     ticket_promedio = df["ticket_promedio"][0]
 
     st.markdown("""
-    <h3 style='color:#1F4E79; border-left: 6px solid #1F4E79; padding-left:10px;'>
+    <h3 style='color:#60B4FF; border-left: 6px solid #60B4FF; padding-left:10px;'>
     📊 Análisis de Rendimiento
     </h3>
     """, unsafe_allow_html=True)
