@@ -188,21 +188,21 @@ def render_dashboard():
         with st.container(border=True):
             st.subheader("📈 Ventas por Fecha")
             fig_linea = px.line(df_linea, x="id_fecha", y="ventas_diarias", markers=True)
-            fig_linea.update_layout(height=450)
+            fig_linea.update_layout(height=450, template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_linea, use_container_width=True, key="fig_linea")
 
     with colB:
         with st.container(border=True):
             st.subheader("🔥 Top 10 Productos")
             fig_top = px.bar(df_top, x="ventas_totales", y="producto", orientation="h")
-            fig_top.update_layout(height=450, yaxis=dict(categoryorder="total ascending"))
+            fig_top.update_layout(height=450, yaxis=dict(categoryorder="total ascending"), template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_top, use_container_width=True, key="fig_top")
 
     with colC:
         with st.container(border=True):
             st.subheader("📉 Productos Menos Vendidos")
             fig_bottom = px.bar(df_bottom, x="ventas_totales", y="producto", orientation="h")
-            fig_bottom.update_layout(height=450, yaxis=dict(categoryorder="total ascending"))
+            fig_bottom.update_layout(height=450, yaxis=dict(categoryorder="total ascending"), template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_bottom, use_container_width=True, key="fig_bottom")
 
     st.divider()
@@ -257,19 +257,19 @@ def render_dashboard():
     with colX:
         with st.container(border=True):
             st.subheader("🥧 Ventas Totales por Categoría")
-            fig_categoria.update_layout(height=450)
+            fig_categoria.update_layout(height=450, template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_categoria, use_container_width=True, key="fig_categoria")
 
     with colY:
         with st.container(border=True):
             st.subheader("📊 Ventas por Talla")
-            fig_talla.update_layout(height=450)
+            fig_talla.update_layout(height=450, template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_talla, use_container_width=True, key="fig_talla")
 
     with colZ:
         with st.container(border=True):
             st.subheader("🍩 Ventas por Color")
-            fig_color.update_layout(height=450)
+            fig_color.update_layout(height=450, template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_color, use_container_width=True, key="fig_color")
 
     st.divider()
