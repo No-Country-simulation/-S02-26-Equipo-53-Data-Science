@@ -1,13 +1,21 @@
 import streamlit as st
 import pandas as pd
 import io
-from ..services.extraction_service import suggest_column_mapping, extract_product_attributes_batch
-from ..services.db_service import upsert_inventory_bulk, resolve_and_insert_sales_bulk
+from ..services.extraction_service import suggest_column_mapping
+from ..services.db_service import upsert_inventory_bulk, resolve_and_insert_sales_bulk, check_product_ambiguity, get_product_id
 from libs.logger import logError, logInfo
+from libs.db_connection import get_db_connection
+import os
+import re
 
 # Definir la estructura obligatoria que requiere la base de datos
 TEMPLATE_INVENTARIO = ["producto", "categoria", "talla", "color", "stock_actual", "precio_adquisicion", "precio_venta"]
-TEMPLATE_VENTAS = ["producto", "cantidad", "precio", "nombre_cliente", "medio_pago", "fecha_registro"]
+
+# Columnas Requeridas vs Opcionales para Ventas
+REQUIRED_VENTAS = ["producto", "cantidad", "precio"]
+OPTIONAL_VENTAS = ["nombre_cliente", "medio_pago", "fecha_registro", "talla", "color", "categoria"]
+TEMPLATE_VENTAS = REQUIRED_VENTAS + OPTIONAL_VENTAS
+
 TEMPLATE_CLIENTES = ["nombre_cliente", "ubicacion_cliente", "genero"]
 
 def download_template_btn(tipo: str):
@@ -118,14 +126,26 @@ def render_paso2_mapeador():
             opciones_select = ["-- Faltante / Asignar Nulo --"] + raw_cols
             
             with st.form("form_mapeo"):
-                for req_col in expected_cols:
+                st.markdown("#### 🚩 Columnas Obligatorias")
+                for req_col in REQUIRED_VENTAS if tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas") else expected_cols:
                     default_idx = 0
                     if req_col in sug_map:
                          try: default_idx = opciones_select.index(sug_map[req_col])
                          except ValueError: pass 
                     
-                    val_seleccionado = st.selectbox(f"Columna para **'{req_col}'**", options=opciones_select, index=default_idx)
-                    current_mapping[req_col] = val_seleccionado
+                    st.selectbox(f"Columna para **'{req_col}'** (Obligatorio)", options=opciones_select, index=default_idx, key=f"map_{req_col}")
+                    current_mapping[req_col] = st.session_state[f"map_{req_col}"]
+
+                if tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas"):
+                    st.markdown("#### ℹ️ Columnas Opcionales (La IA intentará resolverlas si faltan)")
+                    for opt_col in OPTIONAL_VENTAS:
+                        default_idx = 0
+                        if opt_col in sug_map:
+                             try: default_idx = opciones_select.index(sug_map[opt_col])
+                             except ValueError: pass 
+                        
+                        st.selectbox(f"Columna para **'{opt_col}'** (Opcional)", options=opciones_select, index=default_idx, key=f"map_{opt_col}")
+                        current_mapping[opt_col] = st.session_state[f"map_{opt_col}"]
                     
                 enviar_mapeo = st.form_submit_button("Siguiente: Limpiar y Validar", type="primary")
             
@@ -175,28 +195,70 @@ def render_paso3_validacion():
                 if col in df_clean.columns:
                     df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0).astype(int)
 
-            # --- Limpieza IA (Solo si faltan atributos críticos) ---
+            # --- Limpieza Estructurada (REGEX) ---
             if tipo in ["Inventario", "Ventas", "Smart"]:
-                st.write("🤖 Gemini analizando descripciones de productos...")
-                necesita_ia = df_clean.get('talla', pd.Series()).isna().all() or df_clean.get('color', pd.Series()).isna().all()
-                if necesita_ia and len(df_clean) <= 150:
-                    unique_names = df_clean['producto'].dropna().unique().tolist()
-                    extracted_data = extract_product_attributes_batch(unique_names).get("data", [])
+                st.write("🔍 Extrayendo atributos de nombres de productos (Regex)...")
+                
+                def extract_attributes_deterministic(row):
+                    name = str(row['producto'])
+                    talla = row.get('talla')
+                    color = row.get('color')
                     
-                    extract_dict = {item['original']: item for item in extracted_data if isinstance(item, dict) and 'original' in item}
+                    # 1. Extraer Talla si es nula
+                    if pd.isna(talla) or str(talla).strip() == "":
+                        # Buscar patrones comunes de tallas (S, M, L, XL, XXL, 38, 40, etc)
+                        # Buscamos tallas al final o rodeadas de espacios/guiones
+                        size_match = re.search(r'\b(S|M|L|XL|XXL|XXXL|XS|3XL|2XL)\b', name, re.IGNORECASE)
+                        if size_match:
+                            row['talla'] = size_match.group(0).upper()
+                        else:
+                            # Buscar tallas numéricas (común en calzado/jeans)
+                            num_match = re.search(r'\b(2[8-9]|3[0-9]|4[0-9]|5[0-6])\b', name)
+                            if num_match:
+                                row['talla'] = num_match.group(0)
                     
-                    def apply_ai_extract(row, target_col):
-                        name = row['producto']
-                        if name in extract_dict:
-                            # Priorizar valor extraído si el original es nulo
-                            extracted_val = extract_dict[name].get(target_col)
-                            return extracted_val if pd.isna(row[target_col]) or row[target_col] == "" else row[target_col]
-                        return row[target_col]
-                        
-                    df_clean['talla'] = df_clean.apply(lambda r: apply_ai_extract(r, 'talla'), axis=1)
-                    df_clean['color'] = df_clean.apply(lambda r: apply_ai_extract(r, 'color'), axis=1)
-                    # No sobreescribimos 'producto' a menos que sea necesario para simplificar
+                    # 2. Extraer Color si es nulo (Opcional, basado en lista simple)
+                    if pd.isna(color) or str(color).strip() == "":
+                        colors = ['Negro', 'Blanco', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Gris', 'Beige', 'Rosado', 'Lila', 'Marrón']
+                        for c in colors:
+                            if re.search(rf'\b{c}\b', name, re.IGNORECASE):
+                                row['color'] = c
+                                break
+                    return row
+
+                df_clean = df_clean.apply(extract_attributes_deterministic, axis=1)
             
+            # --- Resolviedo IDs y Verificando Ambigüedad (SÓLO PARA VENTAS) ---
+            if tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas"):
+                st.write("🔍 Resolviendo IDs de producto y validando variantes...")
+                conn = get_db_connection()
+                schema = os.getenv("DB_SCHEMA", "raw")
+                if conn:
+                    with conn:
+                        with conn.cursor() as cursor:
+                            def smart_resolve(row):
+                                name = row['producto']
+                                t = row.get('talla')
+                                c = row.get('color')
+                                
+                                # Intentar resolución directa
+                                rid = get_product_id(cursor, schema, name, t, c)
+                                
+                                # Verificamos ambigüedad si no hay talla/color específicos
+                                if not t or not c or str(t).strip() == "" or str(c).strip() == "":
+                                    es_ambiguo, variantes = check_product_ambiguity(cursor, schema, name)
+                                    if es_ambiguo:
+                                        row['_warning'] = f"Ambiguo: {len(variantes)} variantes. Se usará la primera."
+                                        row['_ambiguity'] = variantes
+                                else:
+                                    row['_warning'] = None
+                                    
+                                row['id_producto'] = rid
+                                return row
+                                
+                            df_clean = df_clean.apply(smart_resolve, axis=1)
+                    conn.close()
+
             st.session_state.cleaned_dataframe = df_clean
             status.update(label="✅ Pipeline completado", state="complete")
 
@@ -205,21 +267,36 @@ def render_paso3_validacion():
     
     # Reporte de Errores (Resumen arriba)
     missing_prods = current_df['producto'].isna().sum()
+    unresolved_ids = current_df['id_producto'].isna().sum() if 'id_producto' in current_df.columns else 0
+    ambiguous_count = current_df['_warning'].notna().sum() if '_warning' in current_df.columns else 0
+    
     invalid_prices = 0
     if 'precio' in current_df.columns:
         invalid_prices = current_df['precio'].isna().sum()
     
-    if missing_prods > 0 or invalid_prices > 0:
-        st.error(f"⚠️ Se detectaron **{missing_prods}** productos sin nombre y **{invalid_prices}** errores de precio.")
+    if missing_prods > 0 or unresolved_ids > 0 or invalid_prices > 0 or ambiguous_count > 0:
+        with st.container(border=True):
+            st.markdown("#### ⚖️ Resumen de Validación")
+            c1, c2, c3 = st.columns(3)
+            with c1: st.metric("⚠️ No encontrados", unresolved_ids)
+            with c2: st.metric("❓ Ambiguos", ambiguous_count)
+            with c3: st.metric("❌ Errores Críticos", missing_prods + invalid_prices)
+            
+            if ambiguous_count > 0:
+                st.warning("ℹ️ **Nota sobre Ambiguos**: El sistema detectó varios productos con el mismo nombre pero distintas tallas/colores. Se asignará una por defecto, pero puedes corregirlo en el editor abajo.")
+            if unresolved_ids > 0:
+                st.error("❗ **Productos Faltantes**: Algunos nombres no coinciden con nada en el inventario. Deberás corregirlos o agregarlos al inventario primero.")
     else:
         st.success("✨ ¡Todo parece estar en orden! Revisa una última vez.")
 
     # Configuración de Columnas Estricta
     col_config = {
+        "id_producto": st.column_config.NumberColumn("ID Resuelto", help="Auto-detectado por el sistema", disabled=True),
         "producto": st.column_config.TextColumn("Producto", required=True),
         "categoria": st.column_config.TextColumn("Categoría"),
-        "talla": st.column_config.TextColumn("Talla"),
-        "color": st.column_config.TextColumn("Color"),
+        "talla": st.column_config.TextColumn("Talla (Opcional)"),
+        "color": st.column_config.TextColumn("Color (Opcional)"),
+        "_warning": st.column_config.TextColumn("Aviso Sistema", disabled=True),
     }
     if tipo == "Inventario":
         col_config.update({

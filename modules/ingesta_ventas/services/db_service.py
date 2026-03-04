@@ -10,44 +10,63 @@ except ImportError:
     process = None
     logError("Falta instalar thefuzz y python-Levenshtein para Fuzzy Matching avanzado.")
 
+def check_product_ambiguity(cursor, schema, product_name):
+    """
+    Verifica si un nombre de producto tiene múltiples variantes (talla/color) activas.
+    Retorna (es_ambiguo, lista_variantes)
+    """
+    if not product_name:
+        return False, []
+        
+    query = sql.SQL('''
+        SELECT id_producto, talla, color, stock_actual 
+        FROM {}.inventario_raw 
+        WHERE producto ILIKE %s AND stock_actual > 0
+    ''').format(sql.Identifier(schema))
+    
+    cursor.execute(query, (product_name.strip(),))
+    rows = cursor.fetchall()
+    
+    if len(rows) > 1:
+        return True, [{"id": r[0], "talla": r[1], "color": r[2], "stock": r[3]} for r in rows]
+    return False, []
+
 def get_product_id(cursor, schema, product_name, talla=None, color=None):
     """
     Busca el ID del producto en inventario_raw. 
-    Solo lectura. Retorna None si no existe.
+    Lógica determinista: 
+    1. Coincidencia exacta (Nombre + Talla + Color)
+    2. Coincidencia por Nombre + Talla (si color es nulo)
+    3. Coincidencia solo por Nombre (si no hay más datos)
     """
     if not product_name:
         return None
     
     product_name = product_name.strip()
+    t_val = str(talla).strip() if talla and not pd.isna(talla) else None
+    c_val = str(color).strip() if color and not pd.isna(color) else None
     
-    # Intentar buscar coincidencia exacta con talla y color si se proporcionan
-    conditions = ["producto ILIKE %s"]
-    params = [product_name]
-    
-    if talla and str(talla).strip() and str(talla).strip().lower() != "única":
-        conditions.append("talla ILIKE %s")
-        params.append(str(talla).strip())
-        
-    if color and str(color).strip() and str(color).strip().lower() != "único":
-        conditions.append("color ILIKE %s")
-        params.append(str(color).strip())
-        
-    where_clause = " AND ".join(conditions)
-    
-    query_exact = sql.SQL(f"SELECT id_producto FROM {{}}.inventario_raw WHERE {where_clause} LIMIT 1").format(sql.Identifier(schema))
-    cursor.execute(query_exact, tuple(params))
+    import pandas as pd
+
+    # Caso 1: Todo especificado
+    if t_val and c_val:
+        query = sql.SQL("SELECT id_producto FROM {}.inventario_raw WHERE producto ILIKE %s AND talla ILIKE %s AND color ILIKE %s LIMIT 1").format(sql.Identifier(schema))
+        cursor.execute(query, (product_name, t_val, c_val))
+        res = cursor.fetchone()
+        if res: return res[0]
+
+    # Caso 2: Nombre + Talla
+    if t_val:
+        query = sql.SQL("SELECT id_producto FROM {}.inventario_raw WHERE producto ILIKE %s AND talla ILIKE %s LIMIT 1").format(sql.Identifier(schema))
+        cursor.execute(query, (product_name, t_val))
+        res = cursor.fetchone()
+        if res: return res[0]
+
+    # Caso 3: Solo Nombre (Fallback final)
+    query = sql.SQL("SELECT id_producto FROM {}.inventario_raw WHERE producto ILIKE %s LIMIT 1").format(sql.Identifier(schema))
+    cursor.execute(query, (product_name,))
     res = cursor.fetchone()
-    if res:
-        return res[0]
-        
-    # Fallback solo por nombre (por si la variante no fue especificada correctamente)
-    query_search = sql.SQL("SELECT id_producto FROM {}.inventario_raw WHERE producto ILIKE %s LIMIT 1").format(sql.Identifier(schema))
-    cursor.execute(query_search, (product_name,))
-    res_fallback = cursor.fetchone()
-    if res_fallback:
-        return res_fallback[0]
-        
-    return None
+    return res[0] if res else None
 
 def search_inventory_fuzzy(dictated_name: str, limit: int = 5) -> list:
     """
@@ -157,7 +176,7 @@ def get_client_id(cursor, schema, client_name):
 def insert_sales_to_db(sales_data):
     """
     Recibe lista de diccionarios de ventas y los inserta en ventas_raw.
-    Maneja transacciones.
+    Maneja transacciones con validación estricta de inventario.
     """
     if not sales_data:
         return {"success": False, "message": "No hay datos para guardar."}
@@ -168,69 +187,95 @@ def insert_sales_to_db(sales_data):
 
     schema = os.getenv("DB_SCHEMA", "public")
     inserted_count = 0
+    failed_items = []
     
     try:
+        # Usamos transacción atómica
         with conn:
             with conn.cursor() as cursor:
-                for sale in sales_data:
+                for idx, sale in enumerate(sales_data):
+                    prod_name = sale.get("producto") or "Desconocido"
+                    
                     # 1. Resolver IDs referencias
-                    # Si viene id_producto_directo (fuerza de UI), lo usamos directo.
-                    # Sino, intentamos resolver por texto (flujo bulk legacy).
-                    if sale.get("id_producto_directo"):
-                        id_producto = sale.get("id_producto_directo")
-                    else:
-                        id_producto = get_product_id(cursor, schema, sale.get("producto"), sale.get("talla"), sale.get("color"))
-                        
+                    id_producto = sale.get("id_producto_directo")
+                    if not id_producto:
+                        id_producto = get_product_id(cursor, schema, prod_name, sale.get("talla"), sale.get("color"))
+                    
+                    # VALIDACIÓN CRÍTICA: Existencia de Producto
+                    if not id_producto:
+                        failed_items.append({
+                            "index": idx,
+                            "producto": prod_name,
+                            "razon": "Producto no existe en el inventario oficial."
+                        })
+                        continue
+
+                    # 2. Rebajar Stock y Validar Cantidad
+                    cantidad = int(sale.get("cantidad", 1))
+
+                    query_stock = sql.SQL("""
+                        UPDATE {}.inventario_raw 
+                        SET stock_actual = stock_actual - %s 
+                        WHERE id_producto = %s AND stock_actual >= %s
+                    """).format(sql.Identifier(schema))
+                    
+                    cursor.execute(query_stock, (cantidad, id_producto, cantidad))
+                    
+                    # VALIDACIÓN CRÍTICA: Stock Insuficiente
+                    if cursor.rowcount == 0:
+                        failed_items.append({
+                            "index": idx,
+                            "producto": prod_name,
+                            "razon": f"Stock insuficiente (Solicitado: {cantidad})."
+                        })
+                        continue
+
+                    # 3. Insertar Venta
                     id_cliente = get_client_id(cursor, schema, sale.get("nombre_cliente"))
                     
-                    if not id_producto:
-                         # Loguear advertencia pero intentar insertar igual (puede que la BD permita NULL o tenga trigger)
-                         # OJO: Si la columna es NOT NULL y no tiene default, esto fallará.
-                         # Para efectos de la demo, intentamos.
-                         logInfo(f"Advertencia: Producto '{sale.get('producto')}' no encontrado. Se insertará con ID NULL o 0 si es posible.")
-                    
-                    # 2. Insertar Venta
-                    # Schema ventas_raw ampliado: id_venta, fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga, categoria, talla, color, producto_nombre
                     query_sale = sql.SQL("""
                         INSERT INTO {}.ventas_raw 
                         (fecha, id_producto, id_cliente, cantidad, medio_pago, fecha_carga, categoria, talla, color, producto_nombre)
                         VALUES (%s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s)
                     """).format(sql.Identifier(schema))
                     
-                    # Formatear fecha si es string
                     fecha_venta = sale.get("fecha_registro")
                     if not fecha_venta:
                         fecha_venta = datetime.date.today()
                         
                     cursor.execute(query_sale, (
                         fecha_venta,
-                        id_producto, # Puede ser None
-                        id_cliente,  # Puede ser None
-                        sale.get("cantidad", 1),
+                        id_producto,
+                        id_cliente,
+                        cantidad,
                         sale.get("medio_pago", "Efectivo"),
                         sale.get("categoria"),
                         sale.get("talla"),
                         sale.get("color"),
-                        sale.get("producto")
+                        prod_name
                     ))
                     
-                    # 3. Rebajar Stock Automáticamente
-                    if id_producto:
-                        query_stock = sql.SQL("""
-                            UPDATE {}.inventario_raw 
-                            SET stock_actual = stock_actual - %s 
-                            WHERE id_producto = %s AND stock_actual >= %s
-                        """).format(sql.Identifier(schema))
-                        cursor.execute(query_stock, (sale.get("cantidad", 1), id_producto, sale.get("cantidad", 1)))
-                        
                     inserted_count += 1
+
+                # Si hubo fallos, lanzamos excepción para hacer rollback de TODO
+                # (Opcional: Podríamos permitir éxito parcial si el usuario lo prefiere, 
+                # pero por seguridad de "protección tal cual", rollback total es mejor).
+                if failed_items:
+                    raise ValueError(f"Validación fallida para {len(failed_items)} items.")
                     
         return {"success": True, "message": f"Se insertaron {inserted_count} registros correctamente."}
 
-    except Exception as e:
+    except ValueError as e:
         conn.rollback()
+        return {
+            "success": False, 
+            "message": "Error de validación: Algunos productos no tienen stock o no existen.",
+            "failed_items": failed_items
+        }
+    except Exception as e:
+        if conn: conn.rollback()
         logError(f"Error general en transacción de ventas: {e}")
-        return {"success": False, "message": f"Error al guardar en BD: {e}"}
+        return {"success": False, "message": f"Error crítico en BD: {e}"}
     finally:
         conn.close()
 

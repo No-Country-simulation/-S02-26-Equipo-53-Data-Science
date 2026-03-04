@@ -16,9 +16,9 @@ def render_owner_dashboard():
 
     # --- PESTAÑAS DE REVISIÓN ---
     tab_ventas, tab_inventario, tab_clientes, tab_historial = st.tabs([
-        "📥 Consolidado de Ventas (Raw)", 
-        "📦 Inventario Pendiente (Raw)",
-        "👥 Clientes Nuevos (Raw)",
+        "📥 Solo ventas (Raw)", 
+        "📦 Solo inventario (Raw)",
+        "👥 Solo clientes (Raw)",
         "📊 Historial de BD"
     ])
 
@@ -26,19 +26,22 @@ def render_owner_dashboard():
         if st.session_state.staging_ventas.empty:
             st.info("No hay ventas en el consolidado en este momento.")
         else:
-            st.info("📋 Vista consolidada de ventas listas para enviar a la base de datos (No editable).")
+            st.info("📋 Vista consolidada de ventas (IDs visibles - No editables).")
             
             # Visor de Datos (Solo lectura)
+            # Mostramos id_producto y advertencias para transparencia con el dueño
             st.dataframe(
                 st.session_state.staging_ventas,
                 width="stretch",
                 hide_index=True,
                 column_config={
-                    "id_producto": st.column_config.NumberColumn("ID Prod"),
-                    "precio": st.column_config.NumberColumn("Precio", format="S/ %.2f"),
-                    "cantidad": st.column_config.NumberColumn("Cant"),
-                    "medio_pago": st.column_config.TextColumn("Pago"),
-                    "origen": st.column_config.TextColumn("Origen")
+                    "id_producto": st.column_config.NumberColumn("ID Resuelto", help="ID detectado automáticamente"),
+                    "_warning": st.column_config.TextColumn("⚠️ Aviso", help="Advertencia sobre el producto o variante"),
+                    "producto": st.column_config.TextColumn("Producto", disabled=True),
+                    "precio": st.column_config.NumberColumn("Precio", format="S/ %.2f", disabled=True),
+                    "cantidad": st.column_config.NumberColumn("Cant", disabled=True),
+                    "medio_pago": st.column_config.TextColumn("Pago", disabled=True),
+                    "origen": st.column_config.TextColumn("Origen", disabled=True)
                 }
             )
             edited_df = st.session_state.staging_ventas
@@ -56,7 +59,6 @@ def render_owner_dashboard():
                     from modules.ingesta_ventas.services.extraction_service import detect_business_antipatterns
                     import json
                     
-                    # Convertimos el staging a JSON para que la IA lo analice
                     staging_json = edited_df.to_json(orient='records')
                     
                     with st.spinner("🤖 Gemini está auditando tus ventas..."):
@@ -75,7 +77,6 @@ def render_owner_dashboard():
 
             with c3:
                 if st.button("✅ Confirmar y Guardar todo", type="primary", width="stretch"):
-                    # Lógica de persistencia final
                     save_staging_ventas(edited_df)
 
     with tab_inventario:
@@ -96,7 +97,6 @@ def render_owner_dashboard():
         if st.session_state.staging_clientes.empty:
             st.info("No hay clientes pendientes de registro.")
         else:
-            # En Clientes, solemos querer upsert o simplemente ignorar si ya existen
             edited_cli = st.data_editor(st.session_state.staging_clientes, width="stretch", key="editor_cli_staging")
             if st.button("💾 Registrar Clientes Seleccionados", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import insert_new_client
@@ -112,22 +112,18 @@ def render_owner_dashboard():
 
     with tab_historial:
         st.markdown("### 🔍 Consultas Directas a la BD")
-        # Referencia cruzada al componente de visualización
         from modules.ingesta_ventas.components.database_viewer import render_db_tab
         render_db_tab()
 
 def save_staging_ventas(df):
     """
-    Persiste el DataFrame editado en la base de datos real.
+    Persiste el DataFrame editado. Maneja fallos parciales manteniendo items en staging.
     """
     if df.empty:
         st.error("No hay datos para guardar.")
         return
 
-    # Convertir DataFrame a lista de diccionarios para db_service
     sales_list = df.to_dict('records')
-    
-    # Preparar datos
     formatted_sales = []
     for s in sales_list:
         formatted_sales.append({
@@ -143,7 +139,7 @@ def save_staging_ventas(df):
             "categoria": s.get("categoria")
         })
 
-    with st.spinner("Guardando en base de datos..."):
+    with st.spinner("Guardando en base de datos con validación estricta..."):
         res = insert_sales_to_db(formatted_sales)
         if res["success"]:
             st.success(res["message"])
@@ -153,3 +149,13 @@ def save_staging_ventas(df):
             st.rerun()
         else:
             st.error(res["message"])
+            
+            # Si hay fallos específicos, los informamos y no vaciamos el staging
+            if "failed_items" in res:
+                st.subheader("❌ Errores Críticos (No se guardó nada)")
+                for item in res["failed_items"]:
+                    st.warning(f"Fila {item['index'] + 1}: **{item['producto']}** - {item['razon']}")
+                
+                st.info("💡 Por favor corrige estos items en el origen o el inventario antes de reintentar.")
+            else:
+                st.error("Ocurrió un error inesperado al guardar.")

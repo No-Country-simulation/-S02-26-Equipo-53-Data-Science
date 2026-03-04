@@ -1,6 +1,7 @@
 import streamlit as st
+import datetime
 from streamlit_mic_recorder import speech_to_text
-from libs.logger import logInfo, logError
+from libs.logger import logInfo, logError, logSequence
 from ..services.extraction_service import extract_sales_data
 from ..services.db_service import search_inventory_fuzzy
 from ..services.state_manager import add_to_staging
@@ -9,6 +10,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
     """
     Asistente de Voz Premium: Consolidado y Responsivo.
     """
+    logSequence("Iniciando Asistente de Voz", key)
     # --- CSS Inyectado para Estética Premium ---
     st.markdown("""
         <style>
@@ -95,8 +97,10 @@ def voice_input_component(key="voice_input", language="es-ES"):
     # --- Lógica de Procesamiento IA ---
     if st.session_state.voice_state == "processing":
         with st.status("🔮 Gemini está interpretando tu pedido...", expanded=False) as status:
+            logSequence("Procesando audio/texto con Gemini")
             res = extract_sales_data(st.session_state[t_key])
             if "data" in res:
+                logInfo(f"IA extrajo {len(res['data'])} items")
                 resolved_items = []
                 for item in res["data"]:
                     name_base = item.get("producto_base") or item.get("producto_dictado", "")
@@ -140,8 +144,9 @@ def voice_input_component(key="voice_input", language="es-ES"):
                             "validado": True if found_var else False # Si encontramos variante exacta, pre-validamos
                         })
                     else:
+                        logWarn(f"No se encontraron coincidencias para: {name_base}")
                         resolved_items.append({
-                            "original": name_dictated,
+                            "original": name_base,
                             "matches": [],
                             "producto": "No encontrado",
                             "status": "No Encontrado",
