@@ -20,7 +20,7 @@ def render_db_tab():
     db_name = os.getenv("DB_NAME", "postgres")
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASS", "")
-    db_schema = os.getenv("DB_SCHEMA", "public")
+    db_schema = os.getenv("DB_SCHEMA", "raw")
 
     # Mostrar credenciales (Ocultar password)
     with st.expander("Configuración de Conexión"):

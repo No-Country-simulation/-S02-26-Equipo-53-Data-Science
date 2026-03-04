@@ -38,8 +38,12 @@ def run_backend_cleaning_pipeline():
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
-    
-if __name__ == "__main__":
+ 
+ 
+def run_etl_warehouse_pipeline():
+    """
+    Función principal para ejecutar el proceso ETL completo.
+    """
     print("🚀 Iniciando proceso ETL...")
     result = run_backend_cleaning_pipeline()
     print("📊 Resultado:")
@@ -47,4 +51,9 @@ if __name__ == "__main__":
     # cargar a warehouse
     run_warehouse()
 
-    print(result)    
+    print(result)
+        
+if __name__ == "__main__":
+   run_etl_warehouse_pipeline()
+
+       
