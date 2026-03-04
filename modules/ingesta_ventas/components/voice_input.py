@@ -2,9 +2,9 @@ import streamlit as st
 import datetime
 from streamlit_mic_recorder import speech_to_text
 from libs.logger import logInfo, logError, logSequence, logWarn
-from ..services.extraction_service import extract_sales_data
-from ..services.db_service import search_inventory_fuzzy
-from ..services.state_manager import add_to_staging
+from modules.ingesta_ventas.services.extraction_service import extract_sales_data
+from modules.ingesta_ventas.services.db_service import search_inventory_fuzzy
+from modules.ingesta_ventas.services.state_manager import add_to_staging
 
 def voice_input_component(key="voice_input", language="es-ES"):
     """
@@ -199,7 +199,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                     
                     if is_manual:
                         # Obtenemos todo el inventario resumido para el buscador manual
-                        from ..services.db_service import get_inventory_summary, get_product_variants
+                        from modules.ingesta_ventas.services.db_service import get_inventory_summary, get_product_variants
                         all_inventory = get_inventory_summary()
                         all_names = [p["producto"] for p in all_inventory]
                         
@@ -270,7 +270,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                         
                         with cc1:
                             # Selector Inteligente de Cliente
-                            from ..services.db_service import get_all_clients
+                            from modules.ingesta_ventas.services.db_service import get_all_clients
                             all_clients = get_all_clients()
                             client_names = [c["nombre_cliente"] for c in all_clients]
                             
@@ -347,7 +347,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                         prod_name = st.session_state.get(f"manual_sel_{idx}")
                         if not prod_name: continue
                         
-                        from ..services.db_service import get_product_variants
+                        from modules.ingesta_ventas.services.db_service import get_product_variants
                         variantes = get_product_variants(prod_name)
                         if not variantes: continue
                         

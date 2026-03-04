@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
-from ..services.db_service import (
+from modules.ingesta_ventas.services.db_service import (
     get_inventory_summary, 
     get_product_variants, 
     get_all_clients,
     insert_new_client
 )
-from ..services.state_manager import add_to_staging
+from modules.ingesta_ventas.services.state_manager import add_to_staging
 from libs.logger import logError, logInfo
 
 @st.dialog("Agregar al Carrito")

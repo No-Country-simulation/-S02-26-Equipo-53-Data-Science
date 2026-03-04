@@ -2,10 +2,10 @@ import streamlit as st
 
 
 from libs.logger import logInfo, logSequence, logError
-from .services.state_manager import init_staging_state
+from modules.ingesta_ventas.services.state_manager import init_staging_state
 
-from .components.voice_input import voice_input_component
-from .components.database_viewer import render_db_tab
+from modules.ingesta_ventas.components.voice_input import voice_input_component
+from modules.ingesta_ventas.components.database_viewer import render_db_tab
 
 
 if __name__ == "__main__":
@@ -35,11 +35,11 @@ def main():
         render_voice_agent_tab()
     
     with tab_manual:
-        from .components.manual_input import render_manual_input_tab
+        from modules.ingesta_ventas.components.manual_input import render_manual_input_tab
         render_manual_input_tab()
         
     with tab_bulk:
-        from .components.mass_upload import render_mass_upload_tab
+        from modules.ingesta_ventas.components.mass_upload import render_mass_upload_tab
         render_mass_upload_tab()
         
 def render_voice_agent_tab():

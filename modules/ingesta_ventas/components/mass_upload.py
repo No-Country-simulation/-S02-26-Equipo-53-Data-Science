@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import io
-from ..services.extraction_service import suggest_column_mapping
-from ..services.db_service import upsert_inventory_bulk, resolve_and_insert_sales_bulk, check_product_ambiguity, get_product_id
+from modules.ingesta_ventas.services.extraction_service import suggest_column_mapping
+from modules.ingesta_ventas.services.db_service import upsert_inventory_bulk, resolve_and_insert_sales_bulk, check_product_ambiguity, get_product_id
 from libs.logger import logError, logInfo
 from libs.db_connection import get_db_connection
 import os
@@ -343,7 +343,7 @@ def render_paso3_validacion():
 
     with c2:
         if st.button("🚀 Enviar a Raw", type="primary", width="stretch", disabled=has_errors):
-            from ..services.state_manager import add_to_staging
+            from modules.ingesta_ventas.services.state_manager import add_to_staging
             records = edited_df.to_dict('records')
             # Inyectar origen y unificar campo cliente
             for r in records: 
