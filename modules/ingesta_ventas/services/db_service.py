@@ -3,6 +3,7 @@ from psycopg2 import sql
 import datetime
 from libs.db_connection import get_db_connection
 from libs.logger import logInfo, logError
+import pandas as pd
 
 try:
     from thefuzz import process
