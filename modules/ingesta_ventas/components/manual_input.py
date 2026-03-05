@@ -172,7 +172,17 @@ def render_checkout_y_cliente():
     
     # Calcular Total
     if st.session_state.carrito:
-        total = sum([float(item.get('precio', 0)) * int(item.get('cantidad', 1)) for item in st.session_state.carrito])
+        total = 0.0
+        for item in st.session_state.carrito:
+            p = item.get('precio', 0)
+            c = item.get('cantidad', 1)
+            
+            # Sanitizar inputs del editor interactivo (pueden ser None o NaN)
+            p_val = 0.0 if pd.isna(p) or p == "" else float(p)
+            c_val = 1 if pd.isna(c) or c == "" else int(float(c))
+            
+            total += p_val * c_val
+            
         st.markdown(f"### 💰 Total a Pagar: S/ {total:.2f}")
     
     st.divider()
@@ -228,14 +238,20 @@ def render_checkout_y_cliente():
         hoy = datetime.date.today().strftime("%Y-%m-%d")
         
         for item in st.session_state.carrito:
+            p = item.get("precio", 0)
+            c = item.get("cantidad", 1)
+            
+            p_val = 0.0 if pd.isna(p) or p == "" else float(p)
+            c_val = 1 if pd.isna(c) or c == "" else int(float(c))
+            
             sales_to_insert.append({
                 "id_producto": item.get("id_producto"),
                 "producto": item["producto"],
                 "categoria": item.get("categoria"),
                 "talla": item.get("talla"),
                 "color": item.get("color"),
-                "cantidad": item["cantidad"],
-                "precio": float(item["precio"]),
+                "cantidad": c_val,
+                "precio": p_val,
                 "cliente": nombre_cli_final,
                 "medio_pago": medio_pago,
                 "fecha_registro": hoy,
