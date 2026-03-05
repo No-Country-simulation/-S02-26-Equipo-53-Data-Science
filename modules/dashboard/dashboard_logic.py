@@ -142,7 +142,13 @@ def render_dashboard():
     st.divider()
 
     # ================= SEGUNDA FILA =================
+     st.markdown("""
+    <h3 style='color:#1F4E79; border-left: 6px solid #1F4E79; padding-left:10px;'>
+    📦 Análisis de Productos
+    </h3>
+    """, unsafe_allow_html=True)
 
+       
     query_linea = f"""
     SELECT id_fecha,
            SUM(total_venta) AS ventas_diarias
@@ -208,7 +214,11 @@ def render_dashboard():
     st.divider()
 
     # ================= TERCERA FILA =================
-
+    st.markdown("""
+    <h3 style='color:#1F4E79; border-left: 6px solid #1F4E79; padding-left:10px;'>
+    💰 Análisis de Ventas
+    </h3>
+    """, unsafe_allow_html=True)
     query_categoria = f"""
     SELECT p.categoria,
            SUM(f.total_venta) AS ventas_totales

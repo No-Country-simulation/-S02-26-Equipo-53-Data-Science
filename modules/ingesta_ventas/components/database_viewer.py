@@ -15,11 +15,11 @@ def render_db_tab():
     load_dotenv()
 
     # Obtener credenciales
-    db_host = os.getenv("DB_HOST", "localhost")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "postgres")
-    db_user = os.getenv("DB_USER", "postgres")
-    db_pass = os.getenv("DB_PASS", "")
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT")
+    db_name = os.getenv("DB_NAME")
+    db_user = os.getenv("DB_USER")
+    db_pass = os.getenv("DB_PASS")
     db_schema = os.getenv("DB_SCHEMA", "raw")
 
     # Mostrar credenciales (Ocultar password)
