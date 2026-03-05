@@ -86,7 +86,13 @@ def render_owner_dashboard():
         if st.session_state.staging_inventario.empty:
             st.info("No hay actualizaciones de inventario pendientes.")
         else:
-            edited_inv = st.data_editor(st.session_state.staging_inventario, width="stretch", key="editor_inv_staging")
+            edited_inv = st.data_editor(
+                st.session_state.staging_inventario, 
+                width="stretch", 
+                num_rows="dynamic",
+                key="editor_inv_staging"
+            )
+            st.session_state.staging_inventario = edited_inv
             if st.button("🚀 Confirmar Carga de Inventario", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import upsert_inventory_bulk
                 res = upsert_inventory_bulk(edited_inv.to_dict('records'))
@@ -100,7 +106,13 @@ def render_owner_dashboard():
         if st.session_state.staging_clientes.empty:
             st.info("No hay clientes pendientes de registro.")
         else:
-            edited_cli = st.data_editor(st.session_state.staging_clientes, width="stretch", key="editor_cli_staging")
+            edited_cli = st.data_editor(
+                st.session_state.staging_clientes, 
+                width="stretch", 
+                num_rows="dynamic",
+                key="editor_cli_staging"
+            )
+            st.session_state.staging_clientes = edited_cli
             if st.button("💾 Registrar Clientes Seleccionados", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import insert_new_client
                 success_count = 0
