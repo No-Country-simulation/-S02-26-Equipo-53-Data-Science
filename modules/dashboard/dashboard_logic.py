@@ -142,7 +142,7 @@ def render_dashboard():
     st.divider()
 
     # ================= SEGUNDA FILA =================
-     st.markdown("""
+    st.markdown("""
     <h3 style='color:#1F4E79; border-left: 6px solid #1F4E79; padding-left:10px;'>
     📦 Análisis de Productos
     </h3>
