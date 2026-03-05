@@ -280,7 +280,7 @@ def render_paso3_validacion():
     current_df = st.session_state.cleaned_dataframe
     
     # Reporte de Errores (Resumen arriba)
-    missing_prods = current_df['producto'].isna().sum()
+    missing_prods = current_df['producto'].isna().sum() if 'producto' in current_df.columns else 0
     unresolved_ids = current_df['id_producto'].isna().sum() if 'id_producto' in current_df.columns else 0
     ambiguous_count = current_df['_warning'].notna().sum() if '_warning' in current_df.columns else 0
     
@@ -334,7 +334,7 @@ def render_paso3_validacion():
     )
     
     # Validar antes de enviar
-    has_errors = edited_df['producto'].isna().any()
+    has_errors = edited_df['producto'].isna().any() if 'producto' in edited_df.columns else False
     if tipo == "Ventas" and 'precio' in edited_df.columns:
         has_errors = has_errors or edited_df['precio'].isna().any()
 
