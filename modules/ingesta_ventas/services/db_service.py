@@ -46,8 +46,6 @@ def get_product_id(cursor, schema, product_name, talla=None, color=None):
     product_name = product_name.strip()
     t_val = str(talla).strip() if talla and not pd.isna(talla) else None
     c_val = str(color).strip() if color and not pd.isna(color) else None
-    
-    import pandas as pd
 
     # Caso 1: Todo especificado
     if t_val and c_val:
