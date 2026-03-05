@@ -269,6 +269,16 @@ def render_paso3_validacion():
                                     # Autocompletar categoría si está vacía
                                     if 'categoria' in row and (pd.isna(row['categoria']) or str(row['categoria']).strip() == ""):
                                         row['categoria'] = product_details["categoria"]
+                                        
+                                    # Autocompletar talla si está vacía
+                                    if 'talla' in row and (pd.isna(row['talla']) or str(row['talla']).strip() == ""):
+                                        if pd.notna(product_details["talla"]):
+                                            row['talla'] = product_details["talla"]
+                                            
+                                    # Autocompletar color si está vacío
+                                    if 'color' in row and (pd.isna(row['color']) or str(row['color']).strip() == ""):
+                                        if pd.notna(product_details["color"]):
+                                            row['color'] = product_details["color"]
                                 else:
                                     rid = None
                                 

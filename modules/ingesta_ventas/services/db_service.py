@@ -79,27 +79,27 @@ def get_product_details(cursor, schema, product_name, talla=None, color=None):
     t_val = str(talla).strip() if talla and not pd.isna(talla) else None
     c_val = str(color).strip() if color and not pd.isna(color) else None
     
-    campos = "id_producto, precio_venta_unitario, categoria"
+    campos = "id_producto, precio_venta_unitario, categoria, talla, color"
 
     # Caso 1: Todo especificado
     if t_val and c_val:
         query = sql.SQL(f"SELECT {campos} FROM {{}}.inventario_raw WHERE producto ILIKE %s AND talla ILIKE %s AND color ILIKE %s LIMIT 1").format(sql.Identifier(schema))
         cursor.execute(query, (product_name, t_val, c_val))
         res = cursor.fetchone()
-        if res: return {"id": res[0], "precio": res[1], "categoria": res[2]}
+        if res: return {"id": res[0], "precio": res[1], "categoria": res[2], "talla": res[3], "color": res[4]}
 
     # Caso 2: Nombre + Talla
     if t_val:
         query = sql.SQL(f"SELECT {campos} FROM {{}}.inventario_raw WHERE producto ILIKE %s AND talla ILIKE %s LIMIT 1").format(sql.Identifier(schema))
         cursor.execute(query, (product_name, t_val))
         res = cursor.fetchone()
-        if res: return {"id": res[0], "precio": res[1], "categoria": res[2]}
+        if res: return {"id": res[0], "precio": res[1], "categoria": res[2], "talla": res[3], "color": res[4]}
 
     # Caso 3: Solo Nombre
     query = sql.SQL(f"SELECT {campos} FROM {{}}.inventario_raw WHERE producto ILIKE %s LIMIT 1").format(sql.Identifier(schema))
     cursor.execute(query, (product_name,))
     res = cursor.fetchone()
-    if res: return {"id": res[0], "precio": res[1], "categoria": res[2]}
+    if res: return {"id": res[0], "precio": res[1], "categoria": res[2], "talla": res[3], "color": res[4]}
     
     return None
 
