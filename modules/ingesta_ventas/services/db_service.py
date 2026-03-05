@@ -210,23 +210,42 @@ def search_inventory_fuzzy(dictated_name: str, limit: int = 5) -> list:
     finally:
         conn.close()
 
-def get_client_id(cursor, schema, client_name):
+def get_or_create_client(cursor, schema, client_name, ubicacion="Desconocido"):
     """
-    Busca ID cliente en clientes_raw. 
-    Solo lectura. Retorna None si no existe.
+    Busca ID cliente por nombre y ubicación. Si no existe, lo crea al vuelo.
+    Permite tener "Anónimo" de "Arequipa", "Anónimo" de "Lima", etc.
     """
-    if not client_name or client_name == "Anónimo":
-        return None 
+    if not client_name:
+        client_name = "Anónimo"
+    if not ubicacion:
+        ubicacion = "Desconocido"
         
     client_name = client_name.strip()
+    ubicacion = ubicacion.strip()
     
-    # Solo buscar
-    query_search = sql.SQL("SELECT id_cliente FROM {}.clientes_raw WHERE nombre_cliente ILIKE %s").format(sql.Identifier(schema))
-    cursor.execute(query_search, (client_name,))
+    # 1. Buscar coincidencia exacta (Nombre + Ubicación)
+    query_search = sql.SQL("SELECT id_cliente FROM {}.clientes_raw WHERE nombre_cliente ILIKE %s AND ubicacion_cliente ILIKE %s LIMIT 1").format(sql.Identifier(schema))
+    cursor.execute(query_search, (client_name, ubicacion))
     res = cursor.fetchone()
     if res:
         return res[0]
-    return None
+        
+    # 2. Si no encontró combinando ambos, buscar solo por nombre (para reusar cliente si se omitió ubicación)
+    if client_name.lower() != "anónimo":
+        query_search_name = sql.SQL("SELECT id_cliente FROM {}.clientes_raw WHERE nombre_cliente ILIKE %s LIMIT 1").format(sql.Identifier(schema))
+        cursor.execute(query_search_name, (client_name,))
+        res = cursor.fetchone()
+        if res:
+            return res[0]
+        
+    # 3. Si no existe de ninguna forma, lo creamos
+    query_insert = sql.SQL('''
+        INSERT INTO {}.clientes_raw (nombre_cliente, ubicacion_cliente, genero, fecha_registro, fecha_carga)
+        VALUES (%s, %s, 'U', CURRENT_DATE, CURRENT_TIMESTAMP)
+        RETURNING id_cliente
+    ''').format(sql.Identifier(schema))
+    cursor.execute(query_insert, (client_name, ubicacion))
+    return cursor.fetchone()[0]
 
 def insert_sales_to_db(sales_data):
     """
@@ -286,7 +305,7 @@ def insert_sales_to_db(sales_data):
                         continue
 
                     # 3. Insertar Venta
-                    id_cliente = get_client_id(cursor, schema, sale.get("nombre_cliente"))
+                    id_cliente = get_or_create_client(cursor, schema, sale.get("nombre_cliente"), sale.get("ubicacion_cliente"))
                     
                     query_sale = sql.SQL("""
                         INSERT INTO {}.ventas_raw 

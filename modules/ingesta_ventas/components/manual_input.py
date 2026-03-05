@@ -229,8 +229,10 @@ def render_checkout_y_cliente():
                           
     if st.button("🚀 Confirmar Venta", type="primary"):
         nombre_cli_final = "Anónimo"
+        ubicacion_cli_final = "Desconocido"
         if cliente_seleccionado != "-- Seleccionar Existente --":
              nombre_cli_final = dict_clientes[cliente_seleccionado]['nombre_cliente']
+             ubicacion_cli_final = dict_clientes[cliente_seleccionado]['ubicacion_cliente']
              
         # Preparar data para el insert
         sales_to_insert = []
@@ -253,6 +255,7 @@ def render_checkout_y_cliente():
                 "cantidad": c_val,
                 "precio": p_val,
                 "cliente": nombre_cli_final,
+                "ubicacion_cliente": ubicacion_cli_final,
                 "medio_pago": medio_pago,
                 "fecha_registro": hoy,
                 "origen": "Manual"
