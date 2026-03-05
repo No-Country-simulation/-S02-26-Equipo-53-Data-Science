@@ -17,17 +17,20 @@ Diseñado para el **vendedor en tienda**, permite registrar ventas en segundos s
 - **Resolución Relacional ("Fuzzy Match")**: Tras la extracción IA, la base de datos busca coincidencias reales en el inventario actual de la Base de Datos.
 - **Validación Humana (Data Editor)**: Muestra una grilla editable donde marca con ⚠️ conflictos de ambigüedad (Ej. múltiples variantes de polo negro) o datos faltantes. El insert a la DB (`raw.ventas_raw`) se bloquea hasta que el vendedor elige el ID correcto y las luces pasen a verde ✅.
 
-### 2. 👆 Entrada Manual (En Desarrollo / Operativa)
+### 2. 👆 Entrada Manual (Completamente Funcional)
 Diseñada para registros tradicionales y metódicos.
-- Funciona como el formulario estándar de la aplicación.
-- Cuenta con selectores directos, campos controlados de autocompletado y validaciones puras.
+- Funciona como el formulario interactivo de matriz de la aplicación.
+- Cuenta con selectores directos, revisión de stock en tiempo real y componentes de autocompletado para clientes frecuentes.
+- **Protección Anticolisión**: La grilla de pago (carrito) soporta interacciones inseguras del usuario (como dejar campos nulos/NaN) aplicando un sanitizador inteligente que evita caídas del sistema en cálculos matemáticos de subtotales.
 - Ideal para cuando el entorno de la tienda es demasiado ruidoso para voz o cuando se requiere forzar campos específicos de creación sin recurrir al lenguaje natural.
 
 ### 3. 📂 Carga Inteligente por Lotes de Excel (Completamente Funcional)
 Diseñado para la **migración inicial** y para analistas que traen historiales previos. Maneja dos ámbitos: **📦 Inventario Inicial** y **📈 Historial de Ventas**.
-- **Mapeador Inteligente**: Si el usuario sube un CSV/Excel desordenado (no sigue la plantilla), Gemini IA entra como agente mapeador y sugiere cómo emparejar las columnas desconocidas hacia el modelo oficial relacional.
-- **Extracción Híbrida (Limpieza Pandas + IA)**: Si en la carga se detectan descripciones largas que encapsulan los atributos (Ej. _"Zapatilla Running Azul Talla 42"_), Gemini detecta los Nulos de color/talla faltantes y destripa automágicamente la descripción base en las columnas correspondientes de talla y color, antes de insertarlo al backend.
-- **Grid Predictiva**: Levanta todos los datos pre-procesados en la "Sala de Espera Humana", resaltando cualquier valor estrictamente obligatorio no suministrado de color rojo antes de ejecutar la resolución de bulk insert hacia el servidor PostgreSQL.
+- **Mapeador Inteligente**: Si el usuario sube un CSV/Excel desordenado (no sigue la plantilla oficial), Gemini IA entra como agente mapeador y sugiere cómo emparejar las columnas desconocidas hacia el modelo oficial relacional de PostgreSQL.
+- **Extracción Híbrida (Limpieza Pandas + IA)**: Si en la carga se detectan descripciones largas que encapsulan los atributos (Ej. _"Zapatilla Running Azul Talla 42"_), Python detecta los Nulos de color/talla faltantes y destripa la descripción base en las columnas correspondientes mediante Regex. **(El sistema es dinámico y aísla esta inferencia destructiva para evitar dañar tablas planas como las de Clientes)**.
+- **Auto-Completado Profundo**: Si al cargar un Excel de Ventas falta la Categoría, Precio, Talla o Color, el motor de resolución cruza el ID en la BD de inventario físico y extrae automáticamente los datos ausentes para rellenar la grilla visual.
+- **Fallback Semántico de Categorías**: Ante productos 100% nuevos sin categoría, un algoritmo de NLP categoriza estrictamente las tuplas en `Ropa`, `Calzado` o `Accesorio` analizando el Lexicón del nombre.
+- **Grid Predictiva y Auditable**: Levanta todos los datos pre-procesados en la "Sala de Espera Humana", marcando con errores rojos explícitos las fallas de base de datos antes de enviar al bloque transaccional.
 
 ---
 
