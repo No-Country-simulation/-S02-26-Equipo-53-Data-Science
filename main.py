@@ -30,7 +30,7 @@ st.write(
 )
 
 st.image(
-    "https://images.unsplash.com/photo-1551288049-bebda4e38f71",
+    "imagen/Portada-Plataforma.png",
     use_container_width=True
 )
 
