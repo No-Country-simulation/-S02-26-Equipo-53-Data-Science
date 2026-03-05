@@ -28,12 +28,13 @@ def render_owner_dashboard():
         else:
             st.info("📋 Vista consolidada de ventas (IDs visibles - No editables).")
             
-            # Visor de Datos (Solo lectura)
-            # Mostramos id_producto y advertencias para transparencia con el dueño
-            st.dataframe(
+            # Visor de Datos (Habilitado para eliminar filas)
+            edited_df = st.data_editor(
                 st.session_state.staging_ventas,
                 width="stretch",
                 hide_index=True,
+                num_rows="dynamic",
+                key="editor_ventas_staging",
                 column_config={
                     "id_producto": st.column_config.NumberColumn("ID Resuelto", help="ID detectado automáticamente"),
                     "_warning": st.column_config.TextColumn("⚠️ Aviso", help="Advertencia sobre el producto o variante"),
@@ -44,7 +45,9 @@ def render_owner_dashboard():
                     "origen": st.column_config.TextColumn("Origen", disabled=True)
                 }
             )
-            edited_df = st.session_state.staging_ventas
+            
+            # Guardar el estado de la edición (por si el usuario borra líneas)
+            st.session_state.staging_ventas = edited_df
 
             # Botones de Acción
             c1, c2, c3 = st.columns([1, 1, 1])
