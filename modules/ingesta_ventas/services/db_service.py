@@ -578,7 +578,7 @@ def upsert_inventory_bulk(inventory_data: list):
                             UPDATE {}.inventario_raw 
                             SET stock_actual = stock_actual + %s,
                                 precio_adquisicion = CASE WHEN %s > 0 THEN %s ELSE precio_adquisicion END,
-                                precio_venta = CASE WHEN %s > 0 THEN %s ELSE precio_venta END,
+                                precio_venta_unitario = CASE WHEN %s > 0 THEN %s ELSE precio_venta_unitario END,
                                 fecha_carga = CURRENT_TIMESTAMP
                             WHERE id_producto = %s
                         ''').format(sql.Identifier(schema))
@@ -588,7 +588,7 @@ def upsert_inventory_bulk(inventory_data: list):
                         # Insertar nuevo
                         query_ins = sql.SQL('''
                             INSERT INTO {}.inventario_raw 
-                            (producto, categoria, talla, color, stock_actual, precio_adquisicion, precio_venta, fecha_carga)
+                            (producto, categoria, talla, color, stock_actual, precio_adquisicion, precio_venta_unitario, fecha_carga)
                             VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                         ''').format(sql.Identifier(schema))
                         cursor.execute(query_ins, (
