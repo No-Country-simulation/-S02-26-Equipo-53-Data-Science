@@ -87,6 +87,19 @@ def render_paso1_seleccion():
                 st.session_state.mass_upload_step = 2
                 st.rerun()
 
+    # Fila 3: Carga Técnica (Backup)
+    st.divider()
+    with st.container(border=True):
+        cc1, cc2 = st.columns([0.7, 0.3])
+        with cc1:
+            st.markdown("### 🛠️ Carga Técnica (Backup Directo)")
+            st.write("Solo para datos que ya tienen la estructura exacta de la base de datos (con IDs calculados). Evita validaciones de la IA e inyecta directamente a la tabla Raw.")
+        with cc2:
+            if st.button("⚠️ Cargar Backup", type="secondary", width="stretch"):
+                st.session_state.mass_upload_tipo = "Backup"
+                st.session_state.mass_upload_step = "backup"
+                st.rerun()
+
 def render_paso2_mapeador():
     tipo = st.session_state.mass_upload_tipo
     st.subheader(f"Paso 2: Subir y Mapear ({tipo})")
@@ -361,6 +374,64 @@ def render_paso3_validacion():
             if 'cleaned_dataframe' in st.session_state: del st.session_state.cleaned_dataframe
             st.rerun()
 
+            st.rerun()
+
+def render_paso_backup():
+    st.subheader("🛠️ Carga Técnica Directa (Backup Mode)")
+    
+    if st.button("⬅️ Volver a Paso 1", key="btn_back_backup"):
+        st.session_state.mass_upload_step = 1
+        st.rerun()
+        
+    target_table = st.selectbox("1️⃣ Selecciona la tabla de destino", ["inventario_raw", "ventas_raw", "clientes_raw"])
+    
+    archivo = st.file_uploader(f"2️⃣ Sube tu archivo con estructura exacta (.csv, .xlsx)", type=["csv", "xlsx"])
+    
+    if archivo:
+        try:
+            if archivo.name.endswith(".csv"): df_raw = pd.read_csv(archivo)
+            else: df_raw = pd.read_excel(archivo)
+                 
+            st.write("📊 Previsualización de los datos crudos:")
+            st.dataframe(df_raw.head(), width="stretch")
+            
+            st.warning("⚠️ **Advertencia:** Esta inserción se hace en crudo. Si tus columnas o tipos de datos no coinciden con la tabla de SQL, la base de datos rechazará la transacción.")
+            
+            if st.button("🔥 Inyectar Directamente a Base de Datos", type="primary"):
+                conn = get_db_connection()
+                if conn:
+                    with conn:
+                        from sqlalchemy import create_engine
+                        from urllib.parse import quote_plus
+                        from dotenv import load_dotenv
+                        load_dotenv()
+                        
+                        db_user = os.getenv("DB_USER", "postgres")
+                        db_pass = quote_plus(os.getenv("DB_PASS", ""))
+                        db_host = os.getenv("DB_HOST", "localhost")
+                        db_port = os.getenv("DB_PORT", "5432")
+                        db_name = os.getenv("DB_NAME", "postgres")
+                        db_schema = os.getenv("DB_SCHEMA", "raw")
+                        
+                        engine = create_engine(f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}")
+                        
+                        with st.spinner(f"Inyectando {len(df_raw)} filas en {db_schema}.{target_table}..."):
+                            try:
+                                df_raw.to_sql(target_table, engine, schema=db_schema, if_exists="append", index=False)
+                                st.success(f"✅ ¡{len(df_raw)} filas inyectadas exitosamente en {db_schema}.{target_table}!")
+                                # Pequeña pausa para que el usuario lea el éxito
+                                import time
+                                time.sleep(2)
+                                st.session_state.mass_upload_step = 1
+                                st.rerun()
+                            except Exception as db_err:
+                                st.error(f"❌ Error de la base de datos al inyectar: {db_err}")
+                else:
+                    st.error("❌ No se pudo conectar a la base de datos.")
+                        
+        except Exception as e:
+            st.error(f"Error al procesar el archivo: {e}")
+
 def render_mass_upload_tab():
     if 'mass_upload_step' not in st.session_state:
         st.session_state.mass_upload_step = 1
@@ -375,3 +446,5 @@ def render_mass_upload_tab():
          render_paso2_mapeador()
     elif step == 3:
          render_paso3_validacion()
+    elif step == "backup":
+         render_paso_backup()
