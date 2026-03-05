@@ -210,7 +210,7 @@ def render_paso3_validacion():
                     df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0).astype(int)
 
             # --- Limpieza Estructurada (REGEX) ---
-            if tipo in ["Inventario", "Ventas", "Smart"]:
+            if tipo in ["Inventario", "Ventas"] or (tipo == "Smart" and st.session_state.get("mass_upload_target") in ["Inventario", "Ventas"]):
                 st.write("🔍 Extrayendo atributos de nombres de productos (Regex)...")
                 
                 def extract_attributes_deterministic(row):
