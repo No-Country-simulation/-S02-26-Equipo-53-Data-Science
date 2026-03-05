@@ -256,7 +256,21 @@ def render_paso3_validacion():
                                 c = row.get('color')
                                 
                                 # Intentar resolución directa
-                                rid = get_product_id(cursor, schema, name, t, c)
+                                from modules.ingesta_ventas.services.db_service import get_product_details
+                                product_details = get_product_details(cursor, schema, name, t, c)
+                                
+                                if product_details:
+                                    rid = product_details["id"]
+                                    
+                                    # Autocompletar precio si está vacío en el excel
+                                    if 'precio' in row and (pd.isna(row['precio']) or row['precio'] == 0):
+                                        row['precio'] = product_details["precio"]
+                                        
+                                    # Autocompletar categoría si está vacía
+                                    if 'categoria' in row and (pd.isna(row['categoria']) or str(row['categoria']).strip() == ""):
+                                        row['categoria'] = product_details["categoria"]
+                                else:
+                                    rid = None
                                 
                                 # Verificamos ambigüedad si no hay talla/color específicos
                                 if not t or not c or str(t).strip() == "" or str(c).strip() == "":
@@ -268,6 +282,17 @@ def render_paso3_validacion():
                                     row['_warning'] = None
                                     
                                 row['id_producto'] = rid
+                                
+                                # Fallback final de categoría por palabras clave si sigue vacía
+                                if 'categoria' in row and (pd.isna(row['categoria']) or str(row['categoria']).strip() == ""):
+                                    name_low = str(name).lower()
+                                    if any(w in name_low for w in ['zapato', 'zapatilla', 'bot', 'taco', 'sandalia', 'calzado']):
+                                        row['categoria'] = 'Calzado'
+                                    elif any(w in name_low for w in ['lente', 'gorra', 'sombrero', 'reloj', 'collar', 'pulsera', 'anillo', 'cinturón', 'correa']):
+                                        row['categoria'] = 'Accesorio'
+                                    else:
+                                        row['categoria'] = 'Ropa' # Por descarte, asume Ropa
+                                        
                                 return row
                                 
                             df_clean = df_clean.apply(smart_resolve, axis=1)
