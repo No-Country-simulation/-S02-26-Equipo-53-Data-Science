@@ -96,11 +96,13 @@ def render_owner_dashboard():
             if st.button("🚀 Confirmar Carga de Inventario", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import upsert_inventory_bulk
                 res = upsert_inventory_bulk(edited_inv.to_dict('records'))
-                if res["success"]:
+                if res.get("success", False):
                     st.success(res["message"])
                     from modules.ingesta_ventas.services.state_manager import clear_staging
                     clear_staging("inventario")
                     st.rerun()
+                else:
+                    st.error(res.get("message", "Error desconocido al guardar inventario."))
 
     with tab_clientes:
         if st.session_state.staging_clientes.empty:
@@ -116,14 +118,23 @@ def render_owner_dashboard():
             if st.button("💾 Registrar Clientes Seleccionados", type="primary", width="stretch"):
                 from modules.ingesta_ventas.services.db_service import insert_new_client
                 success_count = 0
+                error_msgs = []
                 for c in edited_cli.to_dict('records'):
                     res = insert_new_client(c)
-                    if res["success"]: success_count += 1
+                    if res.get("success", False): 
+                        success_count += 1
+                    else:
+                        error_msgs.append(f"{c.get('nombre_cliente')}: {res.get('message')}")
                 
-                st.success(f"Se registraron {success_count} clientes.")
-                from modules.ingesta_ventas.services.state_manager import clear_staging
-                clear_staging("clientes")
-                st.rerun()
+                if success_count > 0:
+                    st.success(f"Se registraron {success_count} clientes.")
+                    from modules.ingesta_ventas.services.state_manager import clear_staging
+                    clear_staging("clientes")
+                    st.rerun()
+                if error_msgs:
+                    st.error("Errores encontrados:")
+                    for e in error_msgs:
+                        st.warning(e)
 
     with tab_historial:
         st.markdown("### 🔍 Consultas Directas a la BD")

@@ -358,10 +358,10 @@ def render_paso3_validacion():
         if st.button("🚀 Enviar a Raw", type="primary", width="stretch", disabled=has_errors):
             from modules.ingesta_ventas.services.state_manager import add_to_staging
             records = edited_df.to_dict('records')
-            # Inyectar origen y unificar campo cliente
+            # Inyectar origen y unificar campo cliente (solo para ventas)
             for r in records: 
                 r["origen"] = f"Carga/{tipo}"
-                if "nombre_cliente" in r:
+                if (tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas")) and "nombre_cliente" in r:
                     r["cliente"] = r.pop("nombre_cliente")
             
             if tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas"):
