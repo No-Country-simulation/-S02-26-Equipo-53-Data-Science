@@ -511,3 +511,96 @@ def resolve_and_insert_sales_bulk(sales_data: list):
          return {"success": False, "message": f"Error cruzando datos: {e}"}
     finally:
          conn.close()
+
+def insert_new_client(client_data):
+    """
+    Inserta un nuevo cliente en la BD.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return {"success": False, "message": "No DB connection"}
+    schema = os.getenv("DB_SCHEMA", "public")
+    try:
+        with conn:
+            with conn.cursor() as cursor:
+                query = sql.SQL('''
+                    INSERT INTO {}.clientes_raw 
+                    (nombre_cliente, ubicacion_cliente, genero, fecha_registro, fecha_carga)
+                    VALUES (%s, %s, %s, CURRENT_DATE, CURRENT_TIMESTAMP)
+                    RETURNING id_cliente
+                ''').format(sql.Identifier(schema))
+                cursor.execute(query, (
+                    client_data.get("nombre_cliente"),
+                    client_data.get("ubicacion_cliente"),
+                    client_data.get("genero")
+                ))
+                new_id = cursor.fetchone()[0]
+                return {"success": True, "id_cliente": new_id, "message": "Cliente guardado exitosamente."}
+    except Exception as e:
+        conn.rollback()
+        logError(f"Error insertando cliente: {e}")
+        return {"success": False, "message": str(e)}
+    finally:
+        conn.close()
+
+def upsert_inventory_bulk(inventory_data: list):
+    """
+    Inserta o actualiza masivamente el inventario.
+    Busca por (producto, talla, color). Si existe, suma stock. Si no, inserta.
+    """
+    if not inventory_data:
+        return {"success": False, "message": "No hay datos de inventario."}
+        
+    conn = get_db_connection()
+    if not conn:
+        return {"success": False, "message": "Error de conexión a la base de datos."}
+        
+    schema = os.getenv("DB_SCHEMA", "public")
+    inserted, updated = 0, 0
+    
+    try:
+        with conn:
+            with conn.cursor() as cursor:
+                for item in inventory_data:
+                    prod = item.get("producto")
+                    talla = item.get("talla")
+                    color = item.get("color")
+                    stock = int(item.get("stock_actual", 0))
+                    precio_adq = float(item.get("precio_adquisicion", 0.0))
+                    precio_ven = float(item.get("precio_venta", 0.0))
+                    categoria = item.get("categoria", "Sin Categoría")
+                    
+                    # Verificar si existe variante
+                    id_prod_existente = get_product_id(cursor, schema, prod, talla, color)
+                    
+                    if id_prod_existente:
+                        # Existe, sumar stock y actualizar precios
+                        query_upd = sql.SQL('''
+                            UPDATE {}.inventario_raw 
+                            SET stock_actual = stock_actual + %s,
+                                precio_adquisicion = CASE WHEN %s > 0 THEN %s ELSE precio_adquisicion END,
+                                precio_venta = CASE WHEN %s > 0 THEN %s ELSE precio_venta END,
+                                fecha_carga = CURRENT_TIMESTAMP
+                            WHERE id_producto = %s
+                        ''').format(sql.Identifier(schema))
+                        cursor.execute(query_upd, (stock, precio_adq, precio_adq, precio_ven, precio_ven, id_prod_existente))
+                        updated += 1
+                    else:
+                        # Insertar nuevo
+                        query_ins = sql.SQL('''
+                            INSERT INTO {}.inventario_raw 
+                            (producto, categoria, talla, color, stock_actual, precio_adquisicion, precio_venta, fecha_carga)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        ''').format(sql.Identifier(schema))
+                        cursor.execute(query_ins, (
+                            prod, categoria, talla, color, stock, precio_adq, precio_ven
+                        ))
+                        inserted += 1
+                        
+        return {"success": True, "message": f"Carga Exitosa: {inserted} productos nuevos creados, {updated} actualizados."}
+    except Exception as e:
+        conn.rollback()
+        logError(f"Error en carga masiva de inventario: {e}")
+        return {"success": False, "message": f"Error en BD: {e}"}
+    finally:
+        conn.close()

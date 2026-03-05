@@ -368,6 +368,8 @@ def render_paso3_validacion():
                 add_to_staging("ventas", records)
             elif tipo == "Inventario" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Inventario"):
                 add_to_staging("inventario", records)
+            elif tipo == "Clientes" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Clientes"):
+                add_to_staging("clientes", records)
                 
             st.success("✅ Datos enviados al Panel de Control (Raw).")
             st.session_state.mass_upload_step = 1
