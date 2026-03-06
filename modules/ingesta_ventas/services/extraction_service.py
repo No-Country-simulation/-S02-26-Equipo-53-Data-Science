@@ -98,6 +98,50 @@ def extract_sales_data(text_input: str):
         logError(f"Error total en extracción: {e}")
         return {"error": str(e), "duration": 0}
 
+def extract_inventory_data(text_input: str):
+    """
+    Extrae datos estructurados para NUEVO INVENTARIO a partir de texto libre usando multi-modelo fallback.
+    """
+    if not api_key:
+        return {"error": "API Key no configurada"}
+        
+    try:
+        start_time = datetime.datetime.now()
+        
+        prompt = f"""
+        Actúa como un encargado de almacén experto. Extrae información estructurada para INGRESAR NUEVO INVENTARIO de este texto:
+        "{text_input}"
+        
+        Devuelve una LISTA JSON de objetos. 
+        REGLAS ESTRICTAS:
+        1. producto_base: Nombre genérico del producto (ej: "Polo", "Zapatilla Urbana").
+        2. stock_actual: Cantidad de unidades adquiridas (entero). Si no se dice, 1.
+        3. precio_adquisicion: Cuánto le costó a la tienda comprarlo. Si no se dice, null.
+        4. precio_venta_unitario: Precio al público final. Si no se dice, null.
+        5. color: El color del producto, o null.
+        6. categoria: Clasifica ESTRICTAMENTE el producto en una de estas 3 opciones: "Ropa", "Calzado" o "Accesorio".
+        7. talla: SI EL USUARIO NO DICE EXPLÍCITAMENTE LA TALLA, ENTONCES DEBES DEVOLVER null. ¡NO INVENTES LA TALLA NI ASUMAS ÚNICA A MENOS QUE EL USUARIO DIGA "TALLA ÚNICA"!
+        
+        Campos requeridos en el JSON: producto_base, categoria, talla, color, stock_actual, precio_adquisicion, precio_venta_unitario.
+        
+        Responde SOLO con la LISTA JSON. Sin bloques de markdown.
+        """
+        
+        data, used_model = _generate_with_fallback(prompt)
+        
+        if isinstance(data, dict):
+            data = [data]
+            
+        return {
+            "data": data, 
+            "model": used_model,
+            "duration": (datetime.datetime.now() - start_time).total_seconds()
+        }
+
+    except Exception as e:
+        logError(f"Error total en extracción de inventario: {e}")
+        return {"error": str(e), "duration": 0}
+
 def suggest_column_mapping(user_columns: list, required_columns: list) -> dict:
     """
     Sugerencia de mapeo con fallback.

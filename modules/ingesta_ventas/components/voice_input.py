@@ -2,7 +2,7 @@ import streamlit as st
 import datetime
 from streamlit_mic_recorder import speech_to_text
 from libs.logger import logInfo, logError, logSequence, logWarn
-from modules.ingesta_ventas.services.extraction_service import extract_sales_data
+from modules.ingesta_ventas.services.extraction_service import extract_sales_data, extract_inventory_data
 from modules.ingesta_ventas.services.db_service import search_inventory_fuzzy
 from modules.ingesta_ventas.services.state_manager import add_to_staging
 
@@ -55,7 +55,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
         text_area_placeholder = st.empty()
         
         # Grilla de Controles
-        c1, c2, c3 = st.columns([1, 1, 1.2])
+        c1, c2, c3, c4 = st.columns([1, 0.8, 1.2, 1.2])
         
         with c1:
             # Captura de Audio
@@ -78,17 +78,25 @@ def voice_input_component(key="voice_input", language="es-ES"):
                 st.session_state[t_key] = ""
                 st.session_state.voice_state = "idle"
                 st.session_state.voice_extracted_items = []
+                if 'voice_is_inventory' in st.session_state:
+                    del st.session_state.voice_is_inventory
                 st.rerun()
 
         with c3:
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            is_inventory = st.toggle("📦 Ingresar Inventario", key=f"{key}_mode_inv")
+
+        with c4:
             current_val = st.session_state.get(t_key, "")
-            if st.button("🚀 Analizar con IA", key="btn_ia", width="stretch", disabled=not current_val):
+            if st.button("🚀 Procesar con IA", key="btn_ia", width="stretch", disabled=not current_val):
                 st.session_state.voice_state = "processing"
+                st.session_state.voice_is_inventory = is_inventory
 
         # AHORA instanciamos el text_area en el placeholder
+        ph_text = "Ej: Ingresaron 50 casacas de cuero oscuro compradas a 80 soles para vender a 150..." if is_inventory else "Ej: Vendí 3 polos verdes talla M a 45 soles..."
         text_area_placeholder.text_area(
-            "Escribe o dicta lo vendido:",
-            placeholder="Ej: Vendí 3 polos verdes talla M a 45 soles...",
+            "Escribe o dicta lo vendido/ingresado:",
+            placeholder=ph_text,
             height=150,
             key=t_key,
             label_visibility="collapsed"
@@ -98,74 +106,162 @@ def voice_input_component(key="voice_input", language="es-ES"):
     if st.session_state.voice_state == "processing":
         with st.status("🔮 Gemini está interpretando tu pedido...", expanded=False) as status:
             logSequence("Procesando audio/texto con Gemini")
-            res = extract_sales_data(st.session_state[t_key])
-            if "data" in res:
-                logInfo(f"IA extrajo {len(res['data'])} items")
-                resolved_items = []
-                for item in res["data"]:
-                    name_base = item.get("producto_base") or item.get("producto_dictado", "")
-                    # Reducimos a 3 alternativas sugeridas para no saturar la UI
-                    matches = search_inventory_fuzzy(name_base, limit=3)
-                    
-                    if matches:
-                        # Lógica de pre-selección de variante basada en lo que la IA extrajo
-                        best_match_idx = 0
-                        best_var_idx = 0
+            if st.session_state.get('voice_is_inventory', False):
+                res = extract_inventory_data(st.session_state[t_key])
+                if "data" in res:
+                    logInfo(f"IA extrajo {len(res['data'])} items de inventario")
+                    resolved_items = res["data"]
+                    # Add missing explicit keys if Gemini omits them
+                    for it in resolved_items:
+                        if "categoria" not in it: it["categoria"] = "Ropa"
+                        if "talla" not in it: it["talla"] = None
+                        if "color" not in it: it["color"] = None
+                        if "precio_adquisicion" not in it: it["precio_adquisicion"] = 0.0
+                        if "precio_venta_unitario" not in it: it["precio_venta_unitario"] = 0.0
+                        if "stock_actual" not in it: it["stock_actual"] = 1
                         
-                        target_talla = str(item.get("talla")).lower() if item.get("talla") else None
-                        target_color = str(item.get("color")).lower() if item.get("color") else None
-                        
-                        # Intentar encontrar la variante que coincida con lo extraído
-                        found_var = False
-                        for m_idx, match in enumerate(matches):
-                            for v_idx, var in enumerate(match["variantes"]):
-                                v_talla = str(var.get("talla")).lower()
-                                v_color = str(var.get("color")).lower()
-                                if (target_talla and target_talla in v_talla) or (target_color and target_color in v_color):
-                                    best_match_idx = m_idx
-                                    best_var_idx = v_idx
-                                    found_var = True
-                                    break
-                            if found_var: break
-
-                        resolved_items.append({
-                            "original": name_base,
-                            "matches": matches,
-                            "selected_match_idx": best_match_idx,
-                            "selected_variant_idx": best_var_idx,
-                            "cantidad": item.get("cantidad", 1),
-                            "precio_dictado": item.get("precio", 0.0),
-                            "talla_ia": item.get("talla"),
-                            "color_ia": item.get("color"),
-                            "nombre_cliente": item.get("nombre_cliente"),
-                            "ubicacion_cliente": item.get("ubicacion_cliente"),
-                            "medio_pago": item.get("medio_pago"),
-                            "fecha_registro": item.get("fecha_registro"),
-                            "status": "Match Encontrado",
-                            "validado": True if found_var else False # Si encontramos variante exacta, pre-validamos
-                        })
-                    else:
-                        logWarn(f"No se encontraron coincidencias para: {name_base}")
-                        resolved_items.append({
-                            "original": name_base,
-                            "matches": [],
-                            "producto": "No encontrado",
-                            "status": "No Encontrado",
-                            "validado": False
-                        })
-                
-                st.session_state.voice_extracted_items = resolved_items
-                st.session_state.voice_state = "reviewing"
-                status.update(label=f"✅ Análisis completado ({res.get('model', 'IA')})", state="complete")
-                st.rerun()
+                    st.session_state.voice_extracted_items = resolved_items
+                    st.session_state.voice_state = "reviewing"
+                    status.update(label=f"✅ Análisis completado ({res.get('model', 'IA')})", state="complete")
+                    st.rerun()
+                else:
+                    st.session_state.voice_state = "idle"
+                    st.error("No se pudo extraer información del texto.")
             else:
-                st.session_state.voice_state = "idle"
-                st.error("No se pudo extraer información del texto.")
+                res = extract_sales_data(st.session_state[t_key])
+                if "data" in res:
+                    logInfo(f"IA extrajo {len(res['data'])} items")
+                    resolved_items = []
+                    for item in res["data"]:
+                        name_base = item.get("producto_base") or item.get("producto_dictado", "")
+                        # Reducimos a 3 alternativas sugeridas para no saturar la UI
+                        matches = search_inventory_fuzzy(name_base, limit=3)
+                        
+                        if matches:
+                            # Lógica de pre-selección de variante basada en lo que la IA extrajo
+                            best_match_idx = 0
+                            best_var_idx = 0
+                            
+                            target_talla = str(item.get("talla")).lower() if item.get("talla") else None
+                            target_color = str(item.get("color")).lower() if item.get("color") else None
+                            
+                            # Intentar encontrar la variante que coincida con lo extraído
+                            found_var = False
+                            for m_idx, match in enumerate(matches):
+                                for v_idx, var in enumerate(match["variantes"]):
+                                    v_talla = str(var.get("talla")).lower()
+                                    v_color = str(var.get("color")).lower()
+                                    if (target_talla and target_talla in v_talla) or (target_color and target_color in v_color):
+                                        best_match_idx = m_idx
+                                        best_var_idx = v_idx
+                                        found_var = True
+                                        break
+                                if found_var: break
+    
+                            resolved_items.append({
+                                "original": name_base,
+                                "matches": matches,
+                                "selected_match_idx": best_match_idx,
+                                "selected_variant_idx": best_var_idx,
+                                "cantidad": item.get("cantidad", 1),
+                                "precio_dictado": item.get("precio", 0.0),
+                                "talla_ia": item.get("talla"),
+                                "color_ia": item.get("color"),
+                                "nombre_cliente": item.get("nombre_cliente"),
+                                "ubicacion_cliente": item.get("ubicacion_cliente"),
+                                "medio_pago": item.get("medio_pago"),
+                                "fecha_registro": item.get("fecha_registro"),
+                                "status": "Match Encontrado",
+                                "validado": True if found_var else False # Si encontramos variante exacta, pre-validamos
+                            })
+                        else:
+                            logWarn(f"No se encontraron coincidencias para: {name_base}")
+                            resolved_items.append({
+                                "original": name_base,
+                                "matches": [],
+                                "producto": "No encontrado",
+                                "status": "No Encontrado",
+                                "validado": False
+                            })
+                    
+                    st.session_state.voice_extracted_items = resolved_items
+                    st.session_state.voice_state = "reviewing"
+                    status.update(label=f"✅ Análisis completado ({res.get('model', 'IA')})", state="complete")
+                    st.rerun()
+                else:
+                    st.session_state.voice_state = "idle"
+                    st.error("No se pudo extraer información del texto.")
 
     # --- UI de Confirmación (Resultados con Validación) ---
     if st.session_state.voice_state == "reviewing" and st.session_state.voice_extracted_items:
-        st.markdown("### 📋 Validación de Pedido IA")
-        st.caption("Verifica y ajusta los productos antes de enviarlos al carrito.")
+        if st.session_state.get('voice_is_inventory', False):
+            st.markdown("### 📦 Edición de Nuevo Inventario")
+            st.caption("Verifica las categorías, precios y completa las tallas antes de enviarlos a Raw.")
+            
+            import pandas as pd
+            df_inv = pd.DataFrame(st.session_state.voice_extracted_items)
+            
+            def highlight_invalid_cells(val):
+                if pd.isna(val) or val == "" or str(val).strip() == "":
+                    return 'background-color: #ffcccc; color: #900000;'
+                return ''
+                
+            col_config = {
+                "producto_base": st.column_config.TextColumn("Producto", required=True),
+                "categoria": st.column_config.SelectboxColumn("Categoría", options=["Ropa", "Calzado", "Accesorio"], required=True),
+                "talla": st.column_config.TextColumn("Talla", required=True),
+                "color": st.column_config.TextColumn("Color"),
+                "stock_actual": st.column_config.NumberColumn("Stock", min_value=1),
+                "precio_adquisicion": st.column_config.NumberColumn("Costo (S/)", min_value=0.0, format="S/ %.2f"),
+                "precio_venta_unitario": st.column_config.NumberColumn("Venta (S/)", min_value=0.0, format="S/ %.2f")
+            }
+            
+            edited_df = st.data_editor(
+                df_inv.style.map(highlight_invalid_cells),
+                width="stretch",
+                num_rows="dynamic",
+                column_config=col_config,
+                key="data_editor_voice_inv"
+            )
+            
+            has_errors = False
+            if 'producto_base' in edited_df.columns: has_errors = has_errors or edited_df['producto_base'].isna().any()
+            if 'talla' in edited_df.columns: has_errors = has_errors or edited_df['talla'].isna().any() or (edited_df['talla'].astype(str).str.strip() == "").any()
+            
+            if has_errors:
+                st.error("⚠️ Debes llenar obligatoriamente la Talla y el Nombre en todas las filas antes de guardar.")
+            
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                if st.button("🔄 Corregir Texto", width="stretch", key="corr_text_inv"):
+                    st.session_state.voice_state = "idle"
+                    st.rerun()
+            with col_f2:
+                label_btn = f"📥 Guardar {len(edited_df)} items en Inventario"
+                if st.button(label_btn, type="primary", width="stretch", disabled=has_errors):
+                    temp_items = []
+                    for r in edited_df.to_dict('records'):
+                        temp_items.append({
+                            "producto": r.get('producto_base'),
+                            "categoria": r.get("categoria", "Ropa"),
+                            "talla": r.get("talla"),
+                            "color": r.get("color"),
+                            "stock_actual": r.get("stock_actual", 1),
+                            "precio_adquisicion": r.get("precio_adquisicion", 0.0),
+                            "precio_venta_unitario": r.get("precio_venta_unitario", 0.0),
+                            "origen": "Voz/IA/Inventario"
+                        })
+                    
+                    add_to_staging("inventario", temp_items)
+                    st.toast(f"✅ {len(temp_items)} items de inventario en Staging")
+                    st.session_state.voice_pending_clear = True
+                    st.session_state.voice_state = "idle"
+                    st.session_state.voice_extracted_items = []
+                    st.rerun()
+
+        else:
+            st.markdown("### 📋 Validación de Pedido IA")
+            st.caption("Verifica y ajusta los productos antes de enviarlos al carrito.")
         
         for i, item in enumerate(st.session_state.voice_extracted_items):
             with st.container(border=True):
