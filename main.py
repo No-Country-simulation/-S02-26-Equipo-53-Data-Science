@@ -44,21 +44,21 @@ st.header("🚀 Qué puedes hacer con la app")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.subheader("📁 Subir tus archivos")
+    st.subheader("🎙️ Ingesta Inteligente")
     st.write(
-        "Carga archivos de ventas, clientes e inventario en Excel."
+        "Registra ventas con tu voz o carga Excels sueltos. La Inteligencia Artificial extrae, autocompleta precios y deduce categorías."
     )
 
 with col2:
-    st.subheader("🧠 Análisis automático")
+    st.subheader("🧠 Integridad Automática")
     st.write(
-        "La app detecta columnas, limpia datos y genera métricas clave automáticamente."
+        "Verifica colisiones de stock y limpia valores inválidos matemáticamente para proteger tu operativa de cuelgues del sistema."
     )
 
 with col3:
-    st.subheader("📈 Dashboards interactivos")
+    st.subheader("📈 Dashboards y Base de Datos")
     st.write(
-        "Visualizá KPIs, gráficos y tablas dinámicas listas para usar."
+        "Navega por tus registros tabulares, edítalos dinámicamente o disfruta de visualizaciones consolidadas de tu negocio vivo."
     )
 
 st.divider()
@@ -71,16 +71,16 @@ st.header("⚙️ Cómo funciona")
 step1, step2, step3 = st.columns(3)
 
 with step1:
-    st.markdown("### 1️⃣ Carga tus datos")
-    st.write("Arrastra uno o varios archivos Excel.")
+    st.markdown("### 1️⃣ Carga Cero Fricción")
+    st.write("Usa comandos de voz en tienda, o arrastra tus Excel históricos.")
 
 with step2:
-    st.markdown("### 2️⃣ Procesamos la info")
-    st.write("Normalizamos y validamos los datos automáticamente.")
+    st.markdown("### 2️⃣ Cruce Relacional IA")
+    st.write("Gemini Flash mapea campos ignorados cruzándolos con tu BD.")
 
 with step3:
-    st.markdown("### 3️⃣ Explorá los resultados")
-    st.write("Dashboards listos para análisis y toma de decisiones.")
+    st.markdown("### 3️⃣ Control Total")
+    st.write("Un panel interactivo para revisar, corregir o inyectar las ventas.")
 
 st.divider()
 
