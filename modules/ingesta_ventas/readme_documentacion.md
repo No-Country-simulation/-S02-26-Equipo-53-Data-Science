@@ -24,13 +24,17 @@ La plataforma utiliza una arquitectura por capas:
 ## 5. Arquitectura Específica de esta Parte
 El módulo de ingesta se divide en:
 * `app.py`: Controlador principal de flujo y estado.
+* `README.md` & `readme_documentacion.md`: Guías técnicas e introductorias del módulo.
+* `pitch_exposicion.md`: Guion comercial sintetizado para presentaciones.
 * `components/`:
   * `mass_upload.py`: Gestión de carga de Excel, extracción determinista por Regex y cruce relacional inteligente.
   * `voice_input.py`: Interfaz de micrófono, integración NLP y cuadridrícula de corrección.
-  * `manual_input.py`: Formularios tradicionales.
+  * `manual_input.py`: Formularios tradicionales robustos integrados a la BD.
+  * `database_viewer.py`: Interfaz CRUD paginada e interactiva para visualización y edición directa de las tablas raw.
 * `services/`:
-  * `db_service.py`: Consultas estructuradas (búsqueda de IDs predecibles vía prioridades), manejo transaccional (rollback si falla el stock) y verificación de ambigüedad.
-  * `extraction_service.py`: Lógica de inferencia o sugerencias vía LLM y Regex.
+  * `db_service.py`: Consultas estructuradas, auto-creación inteligente de clientes anónimos, y manejo transaccional.
+  * `extraction_service.py`: Lógica de inferencia de ventas vía LLM (Gemini) con multi-modelo fallback.
+  * `state_manager.py`: Control transversal del estado de sesión de Streamlit para todo el módulo.
 
 ## 6. Diagrama de Arquitectura
 ```mermaid
@@ -125,7 +129,8 @@ erDiagram
 * ✅ **Limpieza Determinista y $0 API Cost** mediante Regex para captura de variantes incorporada y refactorizada en la carga masiva.
 * ✅ **Gestión Humana en Bucle**: El Panel de Dueño muestra explícitamente qué IDs ha auto-gestionado el sistema y señala con banderas de conflicto `❓ Ambiguo` aquellos productos con variantes (Ej. "Hubo 3 polos, seleccioné el primero").
 * ✅ **Integridad Referencial Estricta**: No se pueden grabar ventas al vuelo sin referir a un ID físico preexistente con stock validado a nivel de base de datos.
-* ⏳ **Ingreso Manual Tradicional**: Pestaña visual activa, integración relacional en proceso de acabado.
+* ✅ **Ingreso Manual Tradicional**: Completamente integrado con inserciones automáticas a BD.
+* ✅ **Gestor CRUD**: Nuevo panel interactivo y paginado para alterar ventas base sin programación.
 
 ## 13. Próximos Pasos
 * Integrar la capa manual remanente y estabilizar triggers de la BD mediante pipelines automatizados de staging a warehouse.
