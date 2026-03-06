@@ -15,11 +15,22 @@ Este módulo representa el "punto de entrada" de toda la información comercial 
 * **Integridad de Datos**: Registrar una venta de un producto que no existe en el catálogo o que no tiene stock desbalancea la contabilidad.
 * **Falta de Adopción Técnica**: Sistemas de punto de venta (POS) rígidos que exigen IDs de productos, asustando a usuarios no técnicos.
 
-## 4. Arquitectura del Proyecto
-La plataforma utiliza una arquitectura por capas:
-* **Frontend**: Streamlit (Python) para interfaces interactivas y rápidas.
-* **Servicios Lógicos**: Módulos en Python para limpieza de datos (Pandas), llamadas a APIs externas (Google Gemini) y validación estructurada mediante Regex.
-* **Capa de Datos**: PostgreSQL actuando como capa transaccional (`raw`) y Data Warehouse (`warehouse`).
+## 4. Arquitectura del Proyecto (Estructura Global)
+La plataforma utiliza una estructura de carpetas altamente modularizada para separar los dominios lógicos y de capa visual:
+
+* `imagen/`: Recursos gráficos y assets visuales de la plataforma (ej. banners, logos).
+* `libs/`: Bibliotecas utilitarias compartidas por toda la aplicación.
+  * `db_connection.py`: Gestor centralizado de conexiones a la base de datos PostgreSQL.
+  * `logger.py`: Utilidad estándar para registrar eventos y errores inter-módulos.
+  * `models.py`: Definiciones base o configuraciones compartidas de modelado.
+* `modules/`: Agrupa los diferentes dominios funcionales independientes (Micro-arquitecturas).
+  * `analisis/`: Procesos de ciencia de datos, segmentación y predicciones.
+  * `dashboard/`: Motor de reportes consolidados, KPIs y gráficas en vivo.
+  * `gestion_dueño/`: Panel administrativo de permisos o mantenedores.
+  * `ingesta_ventas/`: **(El módulo actual)** Core de entrada transaccional y validación estructurada.
+* `pages/`: Directorio nativo de Streamlit que enruta las vistas principales en la barra lateral.
+* `scripts/`: Herramientas de terminal orientadas al desarrollador (ej. poblado de mock data, reseteo de DB).
+* `main.py`: Punto de entrada de la aplicación y Landing Page pública.
 
 ## 5. Arquitectura Específica de esta Parte
 El módulo de ingesta se divide en:
