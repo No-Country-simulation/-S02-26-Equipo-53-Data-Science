@@ -108,20 +108,28 @@ def render_db_tab():
                             w_conn = get_conn()
                             with w_conn:
                                 with w_conn.cursor() as cur:
+                                    # Helper para convertir numpy types a python nativo
+                                    def sanitize_val(val):
+                                        if pd.isna(val):
+                                            return None
+                                        if hasattr(val, 'item'):
+                                            return val.item()
+                                        return val
+                                        
                                     # 1. Aplicar Actualizaciones
                                     for row_idx, changes in editor_state["edited_rows"].items():
-                                        pk_id = df.iloc[int(row_idx)][pk_col] # ID original antes del edit
+                                        pk_id = sanitize_val(df.iloc[int(row_idx)][pk_col]) # ID original antes del edit
                                         for col, new_val in changes.items():
+                                            clean_val = sanitize_val(new_val)
                                             update_qry = sql.SQL("UPDATE {}.{} SET {} = %s WHERE {} = %s").format(
                                                 sql.Identifier(db_schema), sql.Identifier(table_name),
                                                 sql.Identifier(col), sql.Identifier(pk_col)
                                             )
-                                            cur.execute(update_qry, (new_val, pk_id))
+                                            cur.execute(update_qry, (clean_val, pk_id))
                                             
                                     # 2. Aplicar Eliminaciones (se indexa por el original)
-                                    # Las filas se envían como ints
                                     for d_idx in sorted(editor_state["deleted_rows"], reverse=True):
-                                        pk_id_del = df.iloc[int(d_idx)][pk_col]
+                                        pk_id_del = sanitize_val(df.iloc[int(d_idx)][pk_col])
                                         del_qry = sql.SQL("DELETE FROM {}.{} WHERE {} = %s").format(
                                             sql.Identifier(db_schema), sql.Identifier(table_name), sql.Identifier(pk_col)
                                         )
@@ -132,9 +140,10 @@ def render_db_tab():
                                         cols = []
                                         vals = []
                                         for c, v in new_row.items():
-                                            if c != pk_col and pd.notna(v) and v != "":
+                                            clean_v = sanitize_val(v)
+                                            if c != pk_col and clean_v is not None and clean_v != "":
                                                 cols.append(sql.Identifier(c))
-                                                vals.append(v)
+                                                vals.append(clean_v)
                                                 
                                         if cols:
                                             insert_qry = sql.SQL("INSERT INTO {}.{} ({}) VALUES ({})").format(
