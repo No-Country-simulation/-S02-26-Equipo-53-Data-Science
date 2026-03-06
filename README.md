@@ -52,6 +52,10 @@ El desarrollo se dividió en roles especializados para asegurar calidad y modula
 
 El flujo de información desde la interacción del usuario hasta el almacenamiento analítico en la nube sigue un modelo robusto de tres capas:
 
+### Arquitectura de Tecnologías
+![Arquitectura Completa](imagen/arquitectura.png)
+
+### Flujo de Datos (Pipeline)
 ![Flujo del Data Pipeline](imagen/flujo.png)
 
 ```mermaid
