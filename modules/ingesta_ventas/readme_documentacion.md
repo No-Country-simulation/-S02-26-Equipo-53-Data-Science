@@ -24,7 +24,6 @@ La plataforma utiliza una estructura de carpetas altamente modularizada para sep
   * `logger.py`: Utilidad estándar para registrar eventos y errores inter-módulos.
   * `models.py`: Definiciones base o configuraciones compartidas de modelado.
 * `modules/`: Agrupa los diferentes dominios funcionales independientes (Micro-arquitecturas).
-  * `analisis/`: Procesos de ciencia de datos, segmentación y predicciones.
   * `dashboard/`: Motor de reportes consolidados, KPIs y gráficas en vivo.
   * `gestion_dueño/`: Panel administrativo de permisos o mantenedores.
   * `ingesta_ventas/`: **(El módulo actual)** Core de entrada transaccional y validación estructurada.

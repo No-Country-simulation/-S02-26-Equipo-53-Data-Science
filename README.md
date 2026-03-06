@@ -62,22 +62,28 @@ El desarrollo se dividió en roles especializados para asegurar calidad y modula
 
 ```text
 proyecto-de-proyectos/
-├── imagen/                    # Recursos visuales
+├── imagen/                    # Recursos visuales (Logos, banners)
 ├── libs/                      # Bibliotecas técnicas compartidas
 │   ├── db_connection.py       # Gestor unificado para Aiven PostgreSQL
-│   ├── logger.py              # Centralización de consola
-│   └── models.py              # Modelos base
+│   ├── logger.py              # Centralización de consola y debugging
+│   └── models.py              # Definiciones compartidas
 ├── modules/                   # Módulos Funcionales Aislados
-│   ├── analisis/              # Procesos de Data Science
-│   ├── dashboard/             # Motor de BI visual
-│   ├── gestion_dueño/         # Panel administrativo
-│   └── ingesta_ventas/        # Core transaccional y NLP
-├── pages/                     # Wrappers nativos de Streamlit para el menú
+│   ├── dashboard/             # Motor de BI visual y reportes dinámicos
+│   ├── gestion_dueño/         # Panel administrativo y de roles
+│   └── ingesta_ventas/        # Core transaccional y NLP (Gemini)
+├── pages/                     # Wrappers nativos de Streamlit para el menú lateral
 ├── scripts/                   # Automatizaciones (Mockers y Clear DB)
-├── main.py                    # Landing Page Inicial
-├── requirements.txt           # Dependencias exactas
+├── main.py                    # Landing Page pública e inicializador
+├── requirements.txt           # Dependencias exactas del proyecto
 └── README.md                  # Este documento
 ```
+
+## � Rutas y Módulos de la Interfaz (UI "Endpoints")
+Dado que es una plataforma basada en Streamlit, los puntos de entrada funcionales se definen en la carpeta `pages/` y `modules/`:
+- `🏠 Landing Page (main.py)`: Presentación ejecutiva del producto DATAMARK.
+- `🎙️ Ingesta de Datos`: Interfaz principal para la captura de ventas a través de dictado por voz, carga masiva o manual.
+- `📊 Dashboard Analítico`: Interfaz de BI para consumo de los esquemas Data Warehouse.
+- `🧑‍�💻 Control Base de Datos`: Consola interactiva CRUD para operaciones directas en las tablas Raw.
 
 ## 💻 Tecnologías Utilizadas
 - **Core de Programación**: Python 3.10+
@@ -88,13 +94,23 @@ proyecto-de-proyectos/
 
 ## 🗄️ Base de Datos (Aiven PostgreSQL)
 **DATAMARK** se enorgullece de usar **[Aiven for PostgreSQL](https://aiven.io/)** como su base de datos principal, garantizando alta disponibilidad, seguridad y resiliencia en la nube. 
-El diseño utiliza arquitectura por esquemas:
-- **`raw`**: Recepción transaccional inmediata (OLTP). Tablas: `ventas_raw`, `inventario_raw`, `clientes_raw`.
-- **`warehouse`**: Capa dimensional limpia para Business Intelligence (OLAP) con Dimensiones y Hechos listos.
+El diseño utiliza arquitectura por esquemas (`raw`, `staging`, `warehouse`), priorizando la estabilidad del OLTP.
+
+### Tablas Principales (Esquema Raw)
+| Tabla | Propósito | Características Clave |
+|-------|-----------|-----------------------|
+| `ventas_raw` | Almacena cada transacción individual de venta. | `id_venta` (PK), `id_producto` (FK), `id_cliente` (FK), cantidad, monto, metodo_pago, fecha. |
+| `inventario_raw` | Catálogo de productos y control de stock físico disponible. | `id_producto` (PK), marca, modelo, color, talla, categoría, stock, precio_unitario. |
+| `clientes_raw` | Directorio de clientes recurrentes e inyectados dinámicamente. | `id_cliente` (PK), nombre_cliente, ubicación, canal_captación. |
+
+## 🔍 Ingesta con Inteligencia Artificial (NLP)
+El corazón de la ingesta automatizada radica en su motor híbrido de procesamiento:
+- **Google Gemini 2.5 Flash**: Encargado de parsear dictados de voz (ej: "Vendí dos zapatillas Nike rojas talla 40 por 150 soles a Juan en Lima") y estructurarlo en un JSON transaccional, infiriendo precios y cantidades.
+- **TheFuzz (Fuzzy Matching)**: Algoritmo de distancia de Levenshtein (Token Sort Ratio) que cruza las extracciones del NLP con los nombres exactos de `inventario_raw` para evitar duplicidades por errores tipográficos.
+- **Determinismo Fallback**: Expresiones regulares locales para extraer tallas estándar (S, M, L) o colores básicos y ahorrar costos de API.
 
 ## ☁️ Despliegue (Streamlit Cloud)
 El proyecto ha sido concebido para ser hosteado bajo *Streamlit Community Cloud*. Toda la configuración ambiental dependiente (Aiven DB Hosts, Passwords, Gemini API Key) está estructurada para cargarse de forma segura a través de los *Streamlit Secrets* (`.streamlit/secrets.toml` o variables de entorno), independizando el código fuente de los datos sensibles y facilitando integraciones continuas (CI/CD).
-
 ## 🚀 Instalación y Contribución
 
 ### 1. Requisitos Previos
@@ -137,3 +153,23 @@ streamlit run main.py
 2. Haz check-out para tu feature: `git checkout -b <nombre-del-aporte>`
 3. Empuja a tu repositorio: `git push origin HEAD`
 4. Crea un **Pull Request** detallando tus adiciones funcionales.
+
+## 🧪 Pruebas y Comandos Operativos
+Si eres desarrollador, puedes apoyarte de los scripts locales ubicados en la carpeta `scripts/`:
+
+### 1. Limpiar Base de Datos (Truncate Base)
+Resetea las identidades y vacía las tablas transaccionales en Aiven.
+```bash
+python scripts/clear_aiven_db.py
+```
+
+### 2. Inyectar Mock Data (BETA)
+Herramienta de testing para cargar volumen en un ambiente limpio:
+```bash
+python scripts/temp_old_db.py
+```
+
+## 🚨 Troubleshooting
+- **Error psycopg2 `can't adapt type 'numpy.int64'`**: Ocurre en la interacción entre Streamlit (`st.data_editor`/Pandas) y Aiven. Los datos numéricos deben convertirse usando `.item()` a tipos Python nativos antes de viajar por Psycopg2. (Resuelto en `database_viewer.py`).
+- **Connection Refused (Aiven)**: Verifica que tu IP no cambie dinámicamente, o en su defecto que esté permitida en los firewalls de Aiven y que tus credenciales en el `.env` o en los *Streamlit Secrets* estén vigentes.
+- **Botón de Micrófono no responde**: Verifica que los permisos del navegador permitan el uso de `audio` para aplicaciones locales corriendo bajo localhost.
