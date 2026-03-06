@@ -22,6 +22,7 @@ def get_engine():
 # ==========================
 
 def truncate_warehouse(engine):
+    """Limpia y trunca todas las tablas del Data Warehouse preparando la carga masiva."""
     print("🧹 Limpiando tablas WAREHOUSE...")
 
     query = """
@@ -46,6 +47,7 @@ def truncate_warehouse(engine):
 # ==========================
 
 def load_dimensions(engine):
+    """Carga y transforma los datos desde Staging hacia las tablas de dimensiones (dim_*) del DW."""
     print("📊 Cargando dimensiones...")
 
     queries = [
@@ -137,6 +139,7 @@ def load_dimensions(engine):
 # ==========================
 
 def load_fact(engine):
+    """Calcula y carga los datos consolidados hacia las tablas de hechos (fact_*) del DW."""
     print("📈 Cargando fact tables...")
 
     query_ventas = """
@@ -193,6 +196,7 @@ def load_fact(engine):
 # ==========================
 
 def run_warehouse():
+    """Ejecuta el pipeline completo de limpieza y carga del Data Warehouse (Dimensiones y Hechos)."""
     engine = get_engine()
 
     print("🚀 Iniciando ETL staging ➜ WAREHOUSE\n")

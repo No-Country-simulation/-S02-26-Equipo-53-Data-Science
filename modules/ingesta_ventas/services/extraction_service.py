@@ -154,3 +154,24 @@ def detect_business_antipatterns(sales_df_json: str):
         logError(f"Error en auditoría IA: {e}")
         return {"warnings": []}
 
+def classify_products_categories_batch(product_names: list) -> dict:
+    """
+    Clasifica una lista de nombres de productos en categorías permitidas.
+    """
+    if not api_key or not product_names:
+        return {"data": {}}
+        
+    try:
+        prompt = f"""
+        Clasifica esta lista de nombres de productos en estrictamente UNA de estas tres categorías: "Ropa", "Calzado" o "Accesorio".
+        {json.dumps(product_names, ensure_ascii=False)}
+        Devuelve SOLO un DICCIONARIO JSON donde la clave sea el nombre del producto exacto y el valor sea la categoría asignada.
+        Ejemplo: {{"Zapatilla Nike": "Calzado", "Polo Rojo": "Ropa", "Reloj Casio": "Accesorio"}}
+        No uses markdown, solo el diccionario JSON crudo.
+        """
+        data, _ = _generate_with_fallback(prompt)
+        return {"data": data}
+    except Exception as e:
+        logError(f"Error en clasificación de categorías por IA: {e}")
+        return {"data": {}}
+

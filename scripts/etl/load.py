@@ -15,6 +15,7 @@ def get_engine():
     return create_engine(f"postgresql://{user}:{password}@{host}:{port}/{db_name}")
 
 def upload_to_staging(df, table_name):
+    """Carga de forma segura un DataFrame hacia la tabla de staging en BD (truncar e insertar)."""
     try:
         engine = get_engine()
         
@@ -37,10 +38,13 @@ def upload_to_staging(df, table_name):
 
 # Opcional: Funciones directas para mayor claridad en el orquestador
 def cargar_ventas_staging(df):
+    """Wrapper para cargar eficientemente el DataFrame de ventas en staging."""
     return upload_to_staging(df, 'ventas_staging')
 
 def cargar_inventario_staging(df):
+    """Wrapper para cargar eficientemente el DataFrame del inventario en staging."""
     return upload_to_staging(df, 'inventario_staging')
 
 def cargar_clientes_staging(df):
+    """Wrapper para cargar eficientemente el DataFrame de clientes en staging."""
     return upload_to_staging(df, 'clientes_staging')

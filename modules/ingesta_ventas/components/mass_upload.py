@@ -243,6 +243,42 @@ def render_paso3_validacion():
 
                 df_clean = df_clean.apply(extract_attributes_deterministic, axis=1)
             
+            # --- Clasificación de Categorías con IA (SÓLO PARA INVENTARIO) ---
+            if tipo == "Inventario" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Inventario"):
+                if "categoria" in df_clean.columns:
+                    mask_missing_cat = df_clean['categoria'].isna() | (df_clean['categoria'].astype(str).str.strip() == "")
+                    missing_cats_products = df_clean.loc[mask_missing_cat, 'producto'].dropna().unique().tolist()
+                    
+                    if missing_cats_products:
+                        st.write(f"🧠 Clasificando {len(missing_cats_products)} categorías faltantes de inventario con Gemini...")
+                        from modules.ingesta_ventas.services.extraction_service import classify_products_categories_batch
+                        
+                        cat_mapping = {}
+                        chunk_size = 50
+                        for i in range(0, len(missing_cats_products), chunk_size):
+                            chunk = missing_cats_products[i:i + chunk_size]
+                            res = classify_products_categories_batch(chunk)
+                            if res and "data" in res and isinstance(res["data"], dict):
+                                cat_mapping.update(res["data"])
+                        
+                        def apply_cat(row):
+                            if pd.isna(row.get('categoria')) or str(row.get('categoria')).strip() == "":
+                                p_name = str(row['producto'])
+                                if p_name in cat_mapping:
+                                    row['categoria'] = cat_mapping[p_name]
+                                else:
+                                    # Fallback local ultra-deterministico
+                                    name_low = p_name.lower()
+                                    if any(w in name_low for w in ['zapato', 'zapatilla', 'bot', 'taco', 'sandalia', 'calzado']):
+                                        row['categoria'] = 'Calzado'
+                                    elif any(w in name_low for w in ['lente', 'gorra', 'sombrero', 'reloj', 'collar', 'pulsera', 'anillo', 'cinturón', 'correa']):
+                                        row['categoria'] = 'Accesorio'
+                                    else:
+                                        row['categoria'] = 'Ropa'
+                            return row
+                            
+                        df_clean = df_clean.apply(apply_cat, axis=1)
+
             # --- Resolviedo IDs y Verificando Ambigüedad (SÓLO PARA VENTAS) ---
             if tipo == "Ventas" or (tipo == "Smart" and st.session_state.get("mass_upload_target") == "Ventas"):
                 st.write("🔍 Resolviendo IDs de producto y validando variantes...")

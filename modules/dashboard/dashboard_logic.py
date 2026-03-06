@@ -18,6 +18,7 @@ def get_engine():
     return create_engine(f"postgresql://{user}:{password}@{host}:{port}/{db_name}")
 
 def render_dashboard():
+    """Carga métricas agrupadas y renderiza todos los gráficos del tablero KPI principal."""
 
     # ⚙ CONFIGURACIÓN (SOLO UNA VEZ Y AL INICIO)
     st.set_page_config(page_title="Dashboard KPIs", layout="wide")

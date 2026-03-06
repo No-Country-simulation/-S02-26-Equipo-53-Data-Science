@@ -15,6 +15,7 @@ def get_engine():
     return create_engine(f"postgresql://{user}:{password}@{host}:{port}/{db_name}")
 
 def fetch_raw_data(table_name):
+    """Extrae los datos crudos desde el esquema raw de la base de datos."""
     try:
         engine = get_engine()
         # Ahora le decimos a SQL que busque específicamente en el esquema 'raw'

@@ -7,6 +7,7 @@ import math
 from dotenv import load_dotenv
 
 def render_db_tab():
+    """Renderiza la pestaña del panel de control de la base de datos con editor interactivo."""
     st.header("🗄️ Control de Base de Datos (CRUD)")
     st.caption("Gestiona de forma estructurada los registros transaccionales (Raw). Edita o avanza por páginas seguras.")
 
@@ -19,6 +20,7 @@ def render_db_tab():
     db_schema = os.getenv("DB_SCHEMA", "raw")
 
     def get_conn():
+        """Establece y devuelve una conexión local de base de datos dentro del contexto de la pestaña."""
         try:
             return psycopg2.connect(
                 dbname=db_name,
@@ -110,6 +112,7 @@ def render_db_tab():
                                 with w_conn.cursor() as cur:
                                     # Helper para convertir numpy types a python nativo
                                     def sanitize_val(val):
+                                        """Limpia tipos ajenos (e.g. numpy object) a tipos python puros de bd."""
                                         if pd.isna(val):
                                             return None
                                         if hasattr(val, 'item'):

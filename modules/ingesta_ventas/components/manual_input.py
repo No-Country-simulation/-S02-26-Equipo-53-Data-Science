@@ -11,6 +11,7 @@ from libs.logger import logError, logInfo
 
 @st.dialog("Agregar al Carrito")
 def modal_seleccion_variante(producto_elegido):
+    """Muestra un modal para seleccionar la variante (talla, color) del producto y añadirlo al carrito."""
     st.markdown(f"### {producto_elegido}")
     
     variantes = get_product_variants(producto_elegido)
@@ -75,6 +76,7 @@ def modal_seleccion_variante(producto_elegido):
         st.rerun()
 
 def render_matriz_productos():
+    """Renderiza la cuadrícula interactiva de productos disponibles para selección manual."""
     st.subheader("📦 Matriz de Productos")
     
     # Buscador dinámico
@@ -147,6 +149,7 @@ def render_matriz_productos():
                             modal_seleccion_variante(nombre)
 
 def render_checkout_y_cliente():
+    """Renderiza el carrito de compras, selección de cliente y método de pago para confirmar la transacción."""
     st.subheader("🛒 Resumen de Compra")
     
     if not st.session_state.carrito:
@@ -271,6 +274,7 @@ def render_checkout_y_cliente():
         st.rerun()
 
 def render_manual_input_tab():
+    """Pestaña principal de carga manual que integra la selección de productos y el checkout de ventas."""
     if 'carrito' not in st.session_state:
         st.session_state.carrito = []
     if 'current_cat' not in st.session_state:
