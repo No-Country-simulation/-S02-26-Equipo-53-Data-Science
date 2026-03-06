@@ -1,4 +1,4 @@
 producto,categoria,talla,color,stock_actual,precio_adquisicion,precio_venta
 Casaca Impermeable,Ropa,L,Azul,20,80.0,150.0
 Zapatilla Urbana,Calzado,42,Blanco,15,120.0,220.0
-Gorra Trucker,Accesorios,Única,Negro,50,15.0,45.0
+Gorra Trucker,Accesorio,Única,Negro,50,15.0,45.0
