@@ -24,7 +24,18 @@
 ## 📙 Descripción
 **DATAMARK** es una plataforma integral diseñada para pequeños y medianos negocios (retail, calzado, ropa) en provincias del Perú. Actúa como un *Data Analyst Automatizado*, combinando la facilidad de **Streamlit** para la ingesta de datos con NLP (Lenguaje Natural) y la solidez de **PostgreSQL** alojado en la nube de **Aiven**. Transforma la captura de ventas diarias y la gestión de inventario en reportes y dashboards dinámicos para la toma de decisiones.
 
-## 👥 Roles del Proyecto
+> 🌐 **Prueba la Aplicación en Vivo**: [DATAMARK (Streamlit Community Cloud)](https://datamark-analytics.streamlit.app/Ingesta_Ventas)
+
+## � Screenshots de la Plataforma
+**(Reemplaza las rutas locales con las imágenes reales cuando las captures)*.*
+
+| Landing Page | Ingesta de Datos (NLP & Excel) |
+|:---:|:---:|
+| <img src="imagen/placeholder_landing.png" width="400" alt="Landing Page"> | <img src="imagen/placeholder_ingesta.png" width="400" alt="Ingesta Inteligente"> |
+| **Control de Base de Datos (CRUD)** | **Dashboard Analítico** |
+| <img src="imagen/placeholder_crud.png" width="400" alt="CRUD Viewer"> | <img src="imagen/placeholder_dashboard.png" width="400" alt="Dashboard BI"> |
+
+## �👥 Roles del Proyecto
 El desarrollo se dividió en roles especializados para asegurar calidad y modularidad:
 - **Implementador (Core & Backend)**: Creación de la arquitectura base, flujos transaccionales (CRUD), validaciones lógicas y conexiones seguras con la base de datos (`libs.db_connection`, Psycopg2 y SQL puro sin abstracciones innecesarias).
 - **Especialista AI (NLP)**: Integración de los modelos Gemini Flash para permitir la inyección de datos a través de inteligencia artificial (dictados de voz y deducción de atributos faltantes).
@@ -36,26 +47,39 @@ El desarrollo se dividió en roles especializados para asegurar calidad y modula
 - **Dashboarding Dinámico**: Tableros analíticos creados en tiempo real leyendo directamente del Data Warehouse.
 - **Validación Estricta**: Sistema anti-caídas que revisa relaciones físicas (Stock suficiente, Cliente existente) antes de impactar en la capa transaccional.
 
-## 🏗️ Arquitectura Modular
+## 🏗️ Arquitectura de la Solución
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│              Capa de Presentación (Streamlit Framework) │
-│                main.py | pages/ | UI Components         │
-└────────────────────┬────────────────────────────────────┘
-                     │ Llamadas asíncronas / Interfaz
-┌────────────────────▼────────────────────────────────────┐
-│              Capa de Negocio Lógica (Modules)           │
-│         ingesta_ventas | analisis | dashboard | libs    │
-├─────────────────────────────────────────────────────────┤
-│  • Extracción NLP (Gemini) • Limpieza Data (Pandas)     │
-│  • Conexiones Centralizadas • Fuzzy Matching / Regex    │
-└────────────────────┬────────────────────────────────────┘
-                     │ Psycopg2
-┌────────────────────▼────────────────────────────────────┐
-│              Capa de Datos Cloud (Aiven PostgreSQL)     │
-│              Esquemas: raw → staging → warehouse        │
-└─────────────────────────────────────────────────────────┘
+El flujo de información desde la interacción del usuario hasta el almacenamiento analítico en la nube sigue un modelo robusto de tres capas:
+
+```mermaid
+graph TD
+    subgraph Frontend [Capa de Presentación - Streamlit Community Cloud]
+        UI1[Voz / Texto Natural]
+        UI2[Carga Masiva Excel]
+        UI3[CRUD Paginado Web]
+    end
+
+    subgraph Backend [Capa Lógica de Negocio - Python]
+        NLP[Gemini 2.5 Flash]
+        Regex[Fuzzy Matching & Regex]
+        DB_Srv[Servicio de Transacciones Seguras]
+    end
+
+    subgraph Database [Capa de Datos - Aiven PostgreSQL Cloud]
+        RAW[(Esquema RAW / OLTP)]
+        WH[(Esquema WAREHOUSE / OLAP)]
+    end
+
+    UI1 -->|Audio/Texto| NLP
+    UI2 -->|Dataframes| Regex
+    UI3 -->|SQL Adaptors| DB_Srv
+    
+    NLP -->|JSON Estructurado| Regex
+    Regex -->|Tokens Limpios| DB_Srv
+    
+    DB_Srv -->|Validación de Stock/Ambigüedad| RAW
+    RAW -.->|Migración Automática| WH
+    WH -->|Lectura Rápida BI| Frontend
 ```
 
 ## 📁 Estructura del Proyecto
