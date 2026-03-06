@@ -58,25 +58,26 @@ def render_owner_dashboard():
                     st.rerun()
             
             with c2:
-                if st.button("🔮 Auditar con IA", width="stretch"):
-                    from modules.ingesta_ventas.services.extraction_service import detect_business_antipatterns
-                    import json
-                    
-                    staging_json = edited_df.to_json(orient='records')
-                    
-                    with st.spinner("🤖 Gemini está auditando tus ventas..."):
-                        audit_res = detect_business_antipatterns(staging_json)
-                        warnings = audit_res.get("warnings", [])
+                if False: # TEMPORALMENTE OCULTO
+                    if st.button("🔮 Auditar con IA", width="stretch"):
+                        from modules.ingesta_ventas.services.extraction_service import detect_business_antipatterns
+                        import json
                         
-                        if not warnings:
-                            st.success("✅ No se detectaron anomalías de negocio. ¡Todo se ve perfecto!")
-                        else:
-                            st.subheader("⚠️ Hallazgos de la Auditoría IA")
-                            for w in warnings:
-                                color = "red" if w["gravedad"] == "Alta" else ("orange" if w["gravedad"] == "Media" else "blue")
-                                with st.expander(f":{color}[{w['gravedad']}] - {w['mensaje']}"):
-                                    st.markdown(f"**Consecuencia:** {w['consecuencia']}")
-                                    st.info("💡 Sugerencia: Revisa los precios o la cantidad para este registro.")
+                        staging_json = edited_df.to_json(orient='records')
+                        
+                        with st.spinner("🤖 Gemini está auditando tus ventas..."):
+                            audit_res = detect_business_antipatterns(staging_json)
+                            warnings = audit_res.get("warnings", [])
+                            
+                            if not warnings:
+                                st.success("✅ No se detectaron anomalías de negocio. ¡Todo se ve perfecto!")
+                            else:
+                                st.subheader("⚠️ Hallazgos de la Auditoría IA")
+                                for w in warnings:
+                                    color = "red" if w["gravedad"] == "Alta" else ("orange" if w["gravedad"] == "Media" else "blue")
+                                    with st.expander(f":{color}[{w['gravedad']}] - {w['mensaje']}"):
+                                        st.markdown(f"**Consecuencia:** {w['consecuencia']}")
+                                        st.info("💡 Sugerencia: Revisa los precios o la cantidad para este registro.")
 
             with c3:
                 if st.button("✅ Confirmar y Guardar todo", type="primary", width="stretch"):

@@ -88,17 +88,18 @@ def render_paso1_seleccion():
                 st.rerun()
 
     # Fila 3: Carga Técnica (Backup)
-    st.divider()
-    with st.container(border=True):
-        cc1, cc2 = st.columns([0.7, 0.3])
-        with cc1:
-            st.markdown("### 🛠️ Carga Técnica (Backup Directo)")
-            st.write("Solo para datos que ya tienen la estructura exacta de la base de datos (con IDs calculados). Evita validaciones de la IA e inyecta directamente a la tabla Raw.")
-        with cc2:
-            if st.button("⚠️ Cargar Backup", type="secondary", width="stretch"):
-                st.session_state.mass_upload_tipo = "Backup"
-                st.session_state.mass_upload_step = "backup"
-                st.rerun()
+    if False: # TEMPORALMENTE OCULTO
+        st.divider()
+        with st.container(border=True):
+            cc1, cc2 = st.columns([0.7, 0.3])
+            with cc1:
+                st.markdown("### 🛠️ Carga Técnica (Backup Directo)")
+                st.write("Solo para datos que ya tienen la estructura exacta de la base de datos (con IDs calculados). Evita validaciones de la IA e inyecta directamente a la tabla Raw.")
+            with cc2:
+                if st.button("⚠️ Cargar Backup", type="secondary", width="stretch"):
+                    st.session_state.mass_upload_tipo = "Backup"
+                    st.session_state.mass_upload_step = "backup"
+                    st.rerun()
 
 def render_paso2_mapeador():
     tipo = st.session_state.mass_upload_tipo
