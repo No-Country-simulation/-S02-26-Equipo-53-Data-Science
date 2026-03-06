@@ -14,19 +14,20 @@
 - [Descripción](#-descripción)
 - [Roles del Proyecto](#-roles-del-proyecto)
 - [Funciones y Aplicaciones](#-funciones-y-aplicaciones)
-- [Arquitectura Modular](#-arquitectura-modular)
+- [Arquitectura de la Solución](#️-arquitectura-de-la-solución)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Tecnologías Utilizadas](#-tecnologías-utilizadas)
-- [Base de Datos (Aiven PostgreSQL)](#-base-de-datos-aiven-postgresql)
-- [Despliegue (Streamlit Cloud)](#-despliegue-streamlit-cloud)
+- [Base de Datos (Aiven PostgreSQL)](#️-base-de-datos-aiven-postgresql)
+- [Despliegue (Streamlit Cloud)](#️-despliegue-streamlit-cloud)
 - [Instalación y Contribución](#-instalación-y-contribución)
+- [Autores](#-autores)
 
 ## 📙 Descripción
 **DATAMARK** es una plataforma integral diseñada para pequeños y medianos negocios (retail, calzado, ropa) en provincias del Perú. Actúa como un *Data Analyst Automatizado*, combinando la facilidad de **Streamlit** para la ingesta de datos con NLP (Lenguaje Natural) y la solidez de **PostgreSQL** alojado en la nube de **Aiven**. Transforma la captura de ventas diarias y la gestión de inventario en reportes y dashboards dinámicos para la toma de decisiones.
 
 > 🌐 **Prueba la Aplicación en Vivo**: [DATAMARK (Streamlit Community Cloud)](https://datamark-analytics.streamlit.app/Ingesta_Ventas)
 
-## � Screenshots de la Plataforma
+##  Screenshots de la Plataforma
 **(Reemplaza las rutas locales con las imágenes reales cuando las captures)*.*
 
 | Landing Page | Ingesta de Datos (NLP & Excel) |
@@ -35,7 +36,7 @@
 | **Control de Base de Datos (CRUD)** | **Dashboard Analítico** |
 | <img src="imagen/placeholder_crud.png" width="400" alt="CRUD Viewer"> | <img src="imagen/placeholder_dashboard.png" width="400" alt="Dashboard BI"> |
 
-## �👥 Roles del Proyecto
+## 👥 Roles del Proyecto
 El desarrollo se dividió en roles especializados para asegurar calidad y modularidad:
 - **Implementador (Core & Backend)**: Creación de la arquitectura base, flujos transaccionales (CRUD), validaciones lógicas y conexiones seguras con la base de datos (`libs.db_connection`, Psycopg2 y SQL puro sin abstracciones innecesarias).
 - **Especialista AI (NLP)**: Integración de los modelos Gemini Flash para permitir la inyección de datos a través de inteligencia artificial (dictados de voz y deducción de atributos faltantes).
@@ -50,6 +51,8 @@ El desarrollo se dividió en roles especializados para asegurar calidad y modula
 ## 🏗️ Arquitectura de la Solución
 
 El flujo de información desde la interacción del usuario hasta el almacenamiento analítico en la nube sigue un modelo robusto de tres capas:
+
+![Flujo del Data Pipeline](imagen/flujo.png)
 
 ```mermaid
 graph TD
@@ -135,12 +138,12 @@ proyecto-de-proyectos/
 └── README.md                         # Este manifiesto global
 ```
 
-## � Rutas y Módulos de la Interfaz (UI "Endpoints")
+##  Rutas y Módulos de la Interfaz (UI "Endpoints")
 Dado que es una plataforma basada en Streamlit, los puntos de entrada funcionales se definen en la carpeta `pages/` y `modules/`:
 - `🏠 Landing Page (main.py)`: Presentación ejecutiva del producto DATAMARK.
 - `🎙️ Ingesta de Datos`: Interfaz principal para la captura de ventas a través de dictado por voz, carga masiva o manual.
 - `📊 Dashboard Analítico`: Interfaz de BI para consumo de los esquemas Data Warehouse.
-- `🧑‍�💻 Control Base de Datos`: Consola interactiva CRUD para operaciones directas en las tablas Raw.
+- `🧑‍💻 Control Base de Datos`: Consola interactiva CRUD para operaciones directas en las tablas Raw.
 
 ## 💻 Tecnologías Utilizadas
 - **Core de Programación**: Python 3.10+
@@ -152,6 +155,11 @@ Dado que es una plataforma basada en Streamlit, los puntos de entrada funcionale
 ## 🗄️ Base de Datos (Aiven PostgreSQL)
 **DATAMARK** se enorgullece de usar **[Aiven for PostgreSQL](https://aiven.io/)** como su base de datos principal, garantizando alta disponibilidad, seguridad y resiliencia en la nube. 
 El diseño utiliza arquitectura por esquemas (`raw`, `staging`, `warehouse`), priorizando la estabilidad del OLTP.
+
+### Modelo Dimensional (Data Warehouse)
+El esquema `warehouse` implementa un modelo tipo **Star Schema**, optimizado para análisis OLAP.
+
+![Modelo OLAP](imagen/modelado_Olap.png)
 
 ### Tablas Principales (Esquema Raw)
 | Tabla | Propósito | Características Clave |
@@ -168,6 +176,7 @@ El corazón de la ingesta automatizada radica en su motor híbrido de procesamie
 
 ## ☁️ Despliegue (Streamlit Cloud)
 El proyecto ha sido concebido para ser hosteado bajo *Streamlit Community Cloud*. Toda la configuración ambiental dependiente (Aiven DB Hosts, Passwords, Gemini API Key) está estructurada para cargarse de forma segura a través de los *Streamlit Secrets* (`.streamlit/secrets.toml` o variables de entorno), independizando el código fuente de los datos sensibles y facilitando integraciones continuas (CI/CD).
+
 ## 🚀 Instalación y Contribución
 
 ### 1. Requisitos Previos
@@ -230,3 +239,13 @@ python scripts/temp_old_db.py
 - **Error psycopg2 `can't adapt type 'numpy.int64'`**: Ocurre en la interacción entre Streamlit (`st.data_editor`/Pandas) y Aiven. Los datos numéricos deben convertirse usando `.item()` a tipos Python nativos antes de viajar por Psycopg2. (Resuelto en `database_viewer.py`).
 - **Connection Refused (Aiven)**: Verifica que tu IP no cambie dinámicamente, o en su defecto que esté permitida en los firewalls de Aiven y que tus credenciales en el `.env` o en los *Streamlit Secrets* estén vigentes.
 - **Botón de Micrófono no responde**: Verifica que los permisos del navegador permitan el uso de `audio` para aplicaciones locales corriendo bajo localhost.
+
+---
+
+## 👩‍💻 Autores
+El proyecto ha sido desarrollado como parte de un desafío técnico enfocado en automatización y análisis de datos para pequeñas empresas, por:
+
+- **Dabalos Carla**
+- **Estrada Leomar**
+- **Paye Cahui Oscar Fernando**
+- **Tantarico Minchola Galia Lizbeth**
