@@ -19,14 +19,14 @@ def recreate_mock_data():
 
     # 1. Productos Fakes
     productos_obj = [
-        InventarioRaw(producto="Zapatilla Deportiva Xtreme", categoria="Zapatillas", talla="40", color="Negro", stock_actual=150, precio_adquisicion=120.0, precio_venta_unitario=180.0),
-        InventarioRaw(producto="Zapatilla Deportiva Xtreme", categoria="Zapatillas", talla="42", color="Blanco", stock_actual=100, precio_adquisicion=120.0, precio_venta_unitario=180.0),
-        InventarioRaw(producto="Polo Algodón Premium", categoria="Polos", talla="M", color="Azul", stock_actual=200, precio_adquisicion=25.0, precio_venta_unitario=45.0),
-        InventarioRaw(producto="Polo Algodón Premium", categoria="Polos", talla="L", color="Rojo", stock_actual=40, precio_adquisicion=25.0, precio_venta_unitario=45.0),
-        InventarioRaw(producto="Pantalón Jean Clásico", categoria="Pantalones", talla="32", color="Celeste", stock_actual=80, precio_adquisicion=60.0, precio_venta_unitario=110.0),
-        InventarioRaw(producto="Pantalón Jean Clásico", categoria="Pantalones", talla="34", color="Azul Oscuro", stock_actual=15, precio_adquisicion=60.0, precio_venta_unitario=110.0),
-        InventarioRaw(producto="Gorra Urban Style", categoria="Accesorios", talla="Única", color="Negro", stock_actual=50, precio_adquisicion=15.0, precio_venta_unitario=35.0),
-        InventarioRaw(producto="Casaca Térmica", categoria="Invierno", talla="XL", color="Plomo", stock_actual=25, precio_adquisicion=90.0, precio_venta_unitario=150.0)
+        InventarioRaw(producto="Zapatilla Deportiva Xtreme", categoria="Calzado", talla="40", color="Negro", stock_actual=150, precio_adquisicion=120.0, precio_venta_unitario=180.0),
+        InventarioRaw(producto="Zapatilla Deportiva Xtreme", categoria="Calzado", talla="42", color="Blanco", stock_actual=100, precio_adquisicion=120.0, precio_venta_unitario=180.0),
+        InventarioRaw(producto="Polo Algodón Premium", categoria="Ropa", talla="M", color="Azul", stock_actual=200, precio_adquisicion=25.0, precio_venta_unitario=45.0),
+        InventarioRaw(producto="Polo Algodón Premium", categoria="Ropa", talla="L", color="Rojo", stock_actual=40, precio_adquisicion=25.0, precio_venta_unitario=45.0),
+        InventarioRaw(producto="Pantalón Jean Clásico", categoria="Ropa", talla="32", color="Celeste", stock_actual=80, precio_adquisicion=60.0, precio_venta_unitario=110.0),
+        InventarioRaw(producto="Pantalón Jean Clásico", categoria="Ropa", talla="34", color="Azul Oscuro", stock_actual=15, precio_adquisicion=60.0, precio_venta_unitario=110.0),
+        InventarioRaw(producto="Gorra Urban Style", categoria="Accesorio", talla="Única", color="Negro", stock_actual=50, precio_adquisicion=15.0, precio_venta_unitario=35.0),
+        InventarioRaw(producto="Casaca Térmica", categoria="Ropa", talla="XL", color="Plomo", stock_actual=25, precio_adquisicion=90.0, precio_venta_unitario=150.0)
     ]
     
     # 2. Clientes Fakes
