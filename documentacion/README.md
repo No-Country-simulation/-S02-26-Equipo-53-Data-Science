@@ -26,48 +26,26 @@ La misión de DATAMARK se resume en cuatro pilares fundamentales:
 
 ---
 
-## 🏗️ Mapa de Arquitectura General
-A continuación, se presenta la visión holística de la orquestación del sistema:
+## 🏗️ Flujo de Operación del Sistema
+Visualización del proceso desde la ingesta hasta la salida:
 
-```mermaid
-graph TD
-    subgraph IN ["Ingesta de Datos"]
-        A[Dictado por Voz]
-        B[Carga Excel/CSV]
-        C[Formuario Manual]
-    end
+**1. 🎙️ Ingesta de Datos (Input)**
+*   Dictado por Voz → Transcripción IA
+*   Carga Masiva → Mapeo Excel
+*   Ingreso Manual → Formularios
 
-    subgraph IQ ["Motor de Inteligencia"]
-        D{Orquestador AI}
-        E[Gemini API]
-        F[Fuzzy Filter]
-    end
+**2. 🧠 Motor de Inteligencia (Brain)**
+*   **Gemini AI**: Extracción de entidades y contexto.
+*   **Fuzzy Filter**: Corrección de ambigüedad y match de productos.
 
-    subgraph DB ["Capa de Datos"]
-        G[(RAW Layer)]
-        H((ETL Process))
-        I[(Warehouse Layer)]
-    end
+**3. 🗄️ Capa de Datos (Persistence)**
+*   **RAW Layer**: Almacenamiento rápido con validación de stock.
+*   **ETL Process**: Limpieza y migración programada.
+*   **Warehouse**: Modelo estrella para analítica.
 
-    subgraph OUT ["Interfáz de Salida"]
-        J[Reporting BI]
-        K[CRUD Admin]
-    end
-
-    IN --> D
-    D <--> E
-    D --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-    G <--> K
-
-    style IQ fill:#f9f,stroke:#333,stroke-width:2px
-    style DB fill:#bbf,stroke:#333,stroke-width:2px
-    style IN fill:#dfd,stroke:#333,stroke-width:2px
-    style OUT fill:#ffd,stroke:#333,stroke-width:2px
-```
+**4. 📊 Interfaz de Salida (Output)**
+*   **Dashboard BI**: Visualización de KPIs y tendencias.
+*   **CRUD Admin**: Gestión y edición de registros.
 
 ---
 
