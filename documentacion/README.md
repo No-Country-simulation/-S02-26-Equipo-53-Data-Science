@@ -74,13 +74,11 @@ graph TD
 ## 📂 Recursos de Profundización
 Haz click en los enlaces para explorar los detalles técnicos de cada componente:
 
-| | Módulo | Descripción Técnica | Documentación |
-| :---: | :--- | :--- | :--- |
-| 🏗️ | **Arquitectura** | Detalle de capas, diagramas de secuencia e infraestructura. | [Explorar ➔](arquitectura.md) |
-| 🗄️ | **Ingeniería de Datos** | Modelado Star Schema, disparadores PL/pgSQL y esquemas. | [Explorar ➔](base_de_datos.md) |
-| 🤖 | **Inteligencia Artificial** | Prompt engineering, fallback de modelos y lógica NLP. | [Explorar ➔](ia_nlp.md) |
-| 🚀 | **Funcionalidades** | Desglose de submódulos de ingesta, auditoría y BI. | [Explorar ➔](funcionalidades.md) |
-| 🛠️ | **Guía de Desarrollo** | Setup de entorno, DevOps y Troubleshooting. | [Explorar ➔](guia_desarrollo.md) |
+- 🏗️ **[Arquitectura](arquitectura.md)**: Detalle de capas, diagramas de secuencia e infraestructura.
+- 🗄️ **[Ingeniería de Datos](base_de_datos.md)**: Modelado Star Schema, disparadores PL/pgSQL y esquemas.
+- 🤖 **[Inteligencia Artificial](ia_nlp.md)**: Prompt engineering, fallback de modelos y lógica NLP.
+- 🚀 **[Funcionalidades](funcionalidades.md)**: Desglose de submódulos de ingesta, auditoría y BI.
+- 🛠️ **[Guía de Desarrollo](guia_desarrollo.md)**: Setup de entorno, DevOps y Troubleshooting.
 
 ---
 
