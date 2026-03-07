@@ -19,11 +19,11 @@
 ## 📚 Documentación Detallada (Recomendado)
 Hemos organizado la documentación técnica en archivos especializados para facilitar la navegación:
 
-- [**Índice de Documentación**](documentacion/README.md)
-- [🏗️ Arquitectura y Flujo](documentacion/arquitectura.md)
-- [🗄️ Modelo de Base de Datos](documentacion/base_de_datos.md)
-- [🤖 Inteligencia Artificial (NLP)](documentacion/ia_nlp.md)
-- [🚀 Guía de Instalación y Desarrollo](documentacion/guia_desarrollo.md)
+- [**Índice de Documentación**](./documentacion/README.md)
+- [🏗️ Arquitectura y Flujo](./documentacion/arquitectura.md)
+- [🗄️ Modelo de Base de Datos](./documentacion/base_de_datos.md)
+- [🤖 Inteligencia Artificial (NLP)](./documentacion/ia_nlp.md)
+- [🚀 Guía de Instalación y Desarrollo](./documentacion/guia_desarrollo.md)
 
 ---
 

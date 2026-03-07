@@ -52,11 +52,11 @@ Visualización del proceso desde la ingesta hasta la salida:
 ## 📂 Recursos de Profundización
 Haz click en los enlaces para explorar los detalles técnicos de cada componente:
 
-- 🏗️ **[Arquitectura](arquitectura.md)**: Detalle de capas, diagramas de secuencia e infraestructura.
-- 🗄️ **[Ingeniería de Datos](base_de_datos.md)**: Modelado Star Schema, disparadores PL/pgSQL y esquemas.
-- 🤖 **[Inteligencia Artificial](ia_nlp.md)**: Prompt engineering, fallback de modelos y lógica NLP.
-- 🚀 **[Funcionalidades](funcionalidades.md)**: Desglose de submódulos de ingesta, auditoría y BI.
-- 🛠️ **[Guía de Desarrollo](guia_desarrollo.md)**: Setup de entorno, DevOps y Troubleshooting.
+- 🏗️ **[Arquitectura](./arquitectura.md)**: Detalle de capas, diagramas de secuencia e infraestructura.
+- 🗄️ **[Ingeniería de Datos](./base_de_datos.md)**: Modelado Star Schema, disparadores PL/pgSQL y esquemas.
+- 🤖 **[Inteligencia Artificial](./ia_nlp.md)**: Prompt engineering, fallback de modelos y lógica NLP.
+- 🚀 **[Funcionalidades](./funcionalidades.md)**: Desglose de submódulos de ingesta, auditoría y BI.
+- 🛠️ **[Guía de Desarrollo](./guia_desarrollo.md)**: Setup de entorno, DevOps y Troubleshooting.
 
 ---
 
