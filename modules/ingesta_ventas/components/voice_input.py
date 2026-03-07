@@ -117,7 +117,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                         if "talla" not in it: it["talla"] = None
                         if "color" not in it: it["color"] = None
                         if "precio_adquisicion" not in it: it["precio_adquisicion"] = 0.0
-                        if "precio_venta_unitario" not in it: it["precio_venta_unitario"] = 0.0
+                        if "precio_venta" not in it: it["precio_venta"] = 0.0
                         if "stock_actual" not in it: it["stock_actual"] = 1
                         
                     st.session_state.voice_extracted_items = resolved_items
@@ -213,7 +213,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                 "color": st.column_config.TextColumn("Color"),
                 "stock_actual": st.column_config.NumberColumn("Stock", min_value=1),
                 "precio_adquisicion": st.column_config.NumberColumn("Costo (S/)", min_value=0.0, format="S/ %.2f"),
-                "precio_venta_unitario": st.column_config.NumberColumn("Venta (S/)", min_value=0.0, format="S/ %.2f")
+                "precio_venta": st.column_config.NumberColumn("Venta (S/)", min_value=0.0, format="S/ %.2f")
             }
             
             edited_df = st.data_editor(
@@ -248,7 +248,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
                             "color": r.get("color"),
                             "stock_actual": r.get("stock_actual", 1),
                             "precio_adquisicion": r.get("precio_adquisicion", 0.0),
-                            "precio_venta_unitario": r.get("precio_venta_unitario", 0.0),
+                            "precio_venta": r.get("precio_venta", 0.0),
                             "origen": "Voz/IA/Inventario"
                         })
                     
