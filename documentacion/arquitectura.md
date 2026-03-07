@@ -1,10 +1,9 @@
 # 🏗️ Arquitectura de la Solución
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Capa-Frontend-FF4B4B?style=flat-square&logo=streamlit" alt="Frontend">
-  <img src="https://img.shields.io/badge/Capa-Backend-3776ab?style=flat-square&logo=python" alt="Backend">
-  <img src="https://img.shields.io/badge/Capa-Cómputo-4285F4?style=flat-square&logo=google-cloud" alt="AI">
-</p>
+![Capa-Frontend](https://img.shields.io/badge/Capa-Frontend-FF4B4B?style=flat-square&logo=streamlit)
+![Capa-Backend](https://img.shields.io/badge/Capa-Backend-3776ab?style=flat-square&logo=python)
+![Capa-Cómputo](https://img.shields.io/badge/Capa-Cómputo-4285F4?style=flat-square&logo=google-cloud)
+
 
 ## 🗺️ Introducción Arquitectónica
 La arquitectura de DATAMARK se basa en la **Separación de Responsabilidades (SoC)**. Hemos diseñado un sistema donde el flujo de información es unidireccional y predecible, minimizando los efectos secundarios en la base de datos transaccional.

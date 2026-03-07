@@ -1,10 +1,9 @@
 # 🤖 Inteligencia Artificial y NLP
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Brain-Google_Gemini-4285F4?style=flat-square&logo=google" alt="Gemini">
-  <img src="https://img.shields.io/badge/Algoritmo-Fuzzy_Wuzzy-blueviolet?style=flat-square" alt="Fuzzy">
-  <img src="https://img.shields.io/badge/Precision-95.2%25-green?style=flat-square" alt="Precision">
-</p>
+![Gemini](https://img.shields.io/badge/Brain-Google_Gemini-4285F4?style=flat-square&logo=google)
+![Fuzzy](https://img.shields.io/badge/Algoritmo-Fuzzy_Wuzzy-blueviolet?style=flat-square)
+![Precision](https://img.shields.io/badge/Precision-95.2%25-green?style=flat-square)
+
 
 ## 🧠 Introducción a la IA de DATAMARK
 No utilizamos la IA solo como una herramienta de chat; es el **motor de parsing principal** de la aplicación. Su función es actuar como un traductor entre el lenguaje humano informal y el esquema relacional rígido de SQL.

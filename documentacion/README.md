@@ -1,11 +1,10 @@
 # 📔 Portal de Documentación Técnica - DATAMARK
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Status-Estable-success?style=for-the-badge&logo=checkbox" alt="Status">
-  <img src="https://img.shields.io/badge/Arquitectura-Modular-blue?style=for-the-badge&logo=docker" alt="Arquitectura">
-  <img src="https://img.shields.io/badge/Motor_IA-Gemini_Flash-orange?style=for-the-badge&logo=google-cloud" alt="IA">
-  <img src="https://img.shields.io/badge/Base_de_Datos-Aiven_PostgreSQL-red?style=for-the-badge&logo=postgresql" alt="DB">
-</p>
+![Status](https://img.shields.io/badge/Status-Estable-success?style=for-the-badge&logo=checkbox)
+![Arquitectura](https://img.shields.io/badge/Arquitectura-Modular-blue?style=for-the-badge&logo=docker)
+![Motor IA](https://img.shields.io/badge/Motor_IA-Gemini_Flash-orange?style=for-the-badge&logo=google-cloud)
+![Base de Datos](https://img.shields.io/badge/Base_de_Datos-Aiven_PostgreSQL-red?style=for-the-badge&logo=postgresql)
+
 
 ---
 
@@ -104,6 +103,5 @@ Para poner en marcha la infraestructura de documentación y desarrollo:
 
 ---
 
-<div align="center">
-  <img src="https://img.shields.io/badge/Hecho_con_❤️_por-DATAMARK_Team-eb4034?style=for-the-badge" alt="Footer Badge">
-</div>
+![Hecho con ❤️ por](https://img.shields.io/badge/Hecho_con_❤️_por-DATAMARK_Team-eb4034?style=for-the-badge)
+

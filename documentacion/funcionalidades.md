@@ -1,10 +1,9 @@
 # 🚀 Funcionalidades y Capacidades
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Estado-Producción-brightgreen?style=flat-square" alt="Estado">
-  <img src="https://img.shields.io/badge/Interactividad-Alta-orange?style=flat-square" alt="Interactividad">
-  <img src="https://img.shields.io/badge/Escalabilidad-Total-blue?style=flat-square" alt="Escalabilidad">
-</p>
+![Estado](https://img.shields.io/badge/Estado-Producción-brightgreen?style=flat-square)
+![Interactividad](https://img.shields.io/badge/Interactividad-Alta-orange?style=flat-square)
+![Escalabilidad](https://img.shields.io/badge/Escalabilidad-Total-blue?style=flat-square)
+
 
 ## 🎨 Visión General
 DATAMARK no es solo un registrador de datos; es un asistente de negocio proactivo. Cada módulo ha sido diseñado pensando en la eficiencia operativa y la claridad visual.

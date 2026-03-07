@@ -1,10 +1,9 @@
 # 🗄️ Ingeniería de Datos y Modelado
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Paradigma-OLTP_%26_OLAP-blue?style=flat-square" alt="Paradigma">
-  <img src="https://img.shields.io/badge/DB-PostgreSQL_16-336791?style=flat-square&logo=postgresql" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Esquemas-3_Capas-success?style=flat-square" alt="Esquemas">
-</p>
+![Paradigma](https://img.shields.io/badge/Paradigma-OLTP_%26_OLAP-blue?style=flat-square)
+![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL_16-336791?style=flat-square&logo=postgresql)
+![Esquemas](https://img.shields.io/badge/Esquemas-3_Capas-success?style=flat-square)
+
 
 ## 🧬 Filosofía del Dato
 En DATAMARK, el dato nace en un entorno ruidoso (voz del usuario) y viaja a través de capas de refinamiento hasta convertirse en un activo estático y veraz en el Warehouse.

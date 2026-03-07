@@ -1,10 +1,9 @@
 # 🛠️ Guía de Ingeniería y Operaciones
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Entorno-Streamlit_Cloud-FF4B4B?style=flat-square&logo=streamlit" alt="Entorno">
-  <img src="https://img.shields.io/badge/Runtime-Python_3.10-3776ab?style=flat-square&logo=python" alt="Runtime">
-  <img src="https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=flat-square&logo=github-actions" alt="CICD">
-</p>
+![Entorno](https://img.shields.io/badge/Entorno-Streamlit_Cloud-FF4B4B?style=flat-square&logo=streamlit)
+![Runtime](https://img.shields.io/badge/Runtime-Python_3.10-3776ab?style=flat-square&logo=python)
+![CICD](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=flat-square&logo=github-actions)
+
 
 ## 🏗️ Flujo de Entrega Continua
 La estabilidad del proyecto se basa en un flujo de despliegue automatizado y predecible.
