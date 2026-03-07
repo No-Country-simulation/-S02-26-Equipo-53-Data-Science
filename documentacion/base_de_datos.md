@@ -1,21 +1,38 @@
-# 🗄️ Estrategia de Base de Datos
+# 🗄️ Ingeniería de Datos
 
-DATAMARK utiliza **Aiven for PostgreSQL** como motor central, implementando una arquitectura de esquemas para separar procesos transaccionales de analíticos.
+DATAMARK gestiona el ciclo de vida completo del dato, desde su captura ruidosa hasta su visualización limpia.
 
-## 📐 Modelo de Datos
+## 🏛️ Estructura de Esquemas
 
-### Esquema RAW (OLTP)
-Diseñado para la captura rápida y segura de transacciones diarias.
-- `ventas_raw`: Registro de cada venta individual.
-- `inventario_raw`: Catálogo central de productos y control de stock.
-- `clientes_raw`: Directorio de clientes.
+```mermaid
+erDiagram
+    RAW_VENTAS ||--o{ RAW_INVENTARIO : "valida contra"
+    RAW_VENTAS ||--o{ RAW_CLIENTES : "pertenece a"
+    
+    RAW_VENTAS }|..|{ STG_VENTAS : "proceso staging"
+    STG_VENTAS ||--|| FACT_VENTAS : "transforma"
+    
+    FACT_VENTAS }|--|| DIM_PRODUCTO : "dimension"
+    FACT_VENTAS }|--|| DIM_CLIENTE : "dimension"
+    FACT_VENTAS }|--|| DIM_FECHA : "dimension"
+    FACT_FECHA ||--|| FACT_VENTAS : "temporal"
+```
 
-### Esquema Warehouse (OLAP)
-Implementa un modelo de **Estrella (Star Schema)** optimizado para reportes.
-- **Hechos (`fact`)**: `ventas_warehouse`
-- **Dimensiones (`dim`)**: `dim_producto`, `dim_cliente`, `dim_tiempo`.
+### 1. Capa Transaccional (RAW)
+Ubicada en el esquema `raw`, esta capa prioriza la velocidad de inserción y la integridad inmediata.
+- **Trigger `trigger_descontar_stock_raw`**: Función en PL/pgSQL que bloquea la fila del producto (`FOR UPDATE`) para evitar condiciones de carrera y garantiza que el stock nunca sea negativo.
 
-## 🔒 Integridad y Seguridad
-- **Validación Multi-capa**: Las ventas se verifican contra el stock actual antes de ser procesadas.
-- **Conexiones Seguras**: Uso de SSL y variables de entorno para credenciales.
-- **Manejo de Tipos**: Conversión explícita de tipos de datos (NumPy/Pandas a Python nativo) para compatibilidad con Psycopg2.
+### 2. Capa Analítica (Warehouse)
+Diseño de **Modelo Estrella** en el esquema `warehouse`, optimizado para agregaciones rápidas.
+
+| Tabla | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `fact_ventas` | Fact | Métricas de ventas (cantidad, precio, total). |
+| `fact_inventario` | Fact | Estado actual del stock analítico. |
+| `dim_producto` | Dim | SCD Tipo 1 para atributos de producto. |
+| `dim_cliente` | Dim | Perfiles de clientes y canales. |
+| `dim_fecha` | Dim | Atributos temporales (mes, año, día de semana). |
+
+## ⚙️ Optimización
+- **Índices**: B-Tree sobre `id_fecha` e `id_cliente` en `fact_ventas` para acelerar filtros en el dashboard.
+- **Tipado Estricto**: Uso de `NUMERIC(10,2)` para evitar errores de precisión de punto flotante en cálculos financieros.

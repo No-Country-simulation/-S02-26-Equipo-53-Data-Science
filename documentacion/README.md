@@ -1,24 +1,35 @@
 # 📚 Índice de Documentación - DATAMARK
 
-Bienvenido a la documentación técnica oficial de la plataforma **DATAMARK** para No Country. Aquí encontrarás el detalle de cómo funciona cada componente del sistema.
+Bienvenido a la documentación técnica exhaustiva de **DATAMARK**. Esta sección detalla cada capa de la plataforma, desde la inyección de datos con IA hasta el modelado OLAP en la nube.
 
-## 🗺️ Mapa de Documentación
+## 🧭 Navegación Rápida
 
-### [1. Arquitectura de la Solución](arquitectura.md)
-Visión general del sistema, capas de tecnología y diagrama de flujo de datos.
+### [1. Arquitectura del Sistema](arquitectura.md)
+*   Visualización de capas (Presentation, Logic, Data).
+*   Flujo de datos transaccional y analítico.
+*   Diagramas de secuencia de componentes.
 
-### [2. Base de Datos](base_de_datos.md)
-Diseño de esquemas Raw y Warehouse, modelado de datos y gestión de integridad.
+### [2. Ingeniería de Datos y Backend](base_de_datos.md)
+*   Diccionario de datos (RAW, Staging, Warehouse).
+*   Triggers de integridad y lógica de concurrencia.
+*   Modelo Estrella (Star Schema) para Business Intelligence.
 
-### [3. IA y Procesamiento NLP](ia_nlp.md)
-Detalles sobre la integración con Gemini 2.5 Flash y algoritmos de Fuzzy Matching.
+### [3. Inteligencia Artificial y NLP](ia_nlp.md)
+*   Configuración de Google Gemini (Flash 1.5/2.5).
+*   Prompts de ingeniería para extracción de entidades.
+*   Algoritmos de Fuzzy Matching (Levenshtein Distance).
 
-### [4. Funcionalidades y Aplicaciones](funcionalidades.md)
-Descripción detallada de la ingesta de datos, el panel CRUD y el Dashboard BI.
+### [4. Capacidades y Módulos](funcionalidades.md)
+*   Módulo de Ingesta (Voz, Excel, Manual).
+*   Panel de Gestión CRUD y Auditoría IA.
+*   Motor de Business Intelligence y Visualización.
 
-### [5. Guía de Desarrollo e Instalación](guia_desarrollo.md)
-Instrucciones para desarrolladores sobre setup local, comandos y flujos de Git.
+### [5. Guía de Ingeniería y DevOps](guia_desarrollo.md)
+*   Stack tecnológico y dependencias.
+*   Configuración de entornos (Aiven + Streamlit Cloud).
+*   Solución de problemas comunes (Troubleshooting).
 
 ---
-> [!NOTE]
-> Esta documentación está en constante actualización para reflejar el estado actual de la plataforma en su rama estable.
+> [!IMPORTANT]
+> Esta documentación está diseñada para ingenieros y analistas de datos que deseen entender el funcionamiento interno de la plataforma o contribuir a su desarrollo.
+

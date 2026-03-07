@@ -1,18 +1,30 @@
-# 🚀 Funcionalidades de la Plataforma
+# 🚀 Funcionalidades y Módulos
 
-DATAMARK ofrece un ecosistema completo para la gestión y análisis de negocios minoristas.
+DATAMARK está compuesto por módulos especializados que cubren todo el espectro de la gestión de un negocio.
 
-## 1. Ingesta Inteligente
-- **Voz a Datos**: Captura de ventas mediante dictado natural.
-- **Carga Masiva**: Procesamiento de archivos Excel/CSV con mapeo automático de columnas.
-- **Ingreso Manual**: Fomularios tradicionales optimizados para rapidez.
+## 🎙️ Módulo de Ingesta Inteligente
+Este módulo es la puerta de entrada principal de datos.
 
-## 2. Gestión Transaccional (CRUD)
-- **Visor de Datos**: Interfaz tabular interactiva (`st.data_editor`) para edición directa.
-- **Control de Inventario**: Gestión en tiempo real de entradas y salidas de stock.
-- **Paginación**: Manejo eficiente de grandes volúmenes de datos para evitar latencia.
+```mermaid
+graph TD
+    V[Voz] --> AI[Extracción AI]
+    E[Excel] --> M[Mapeo de Columnas]
+    Man[Manual] --> F[Formulario]
+    AI & M & F --> Vld[Validación de Negocio]
+    Vld --> P[Inserción BD]
+```
 
-## 3. Business Intelligence
-- **Dashboards Dinámicos**: KPIs de ventas, productos estrella y tendencias mensuales.
-- **Análisis de Clientes**: Segmentación por canal de captación y frecuencia de compra.
-- **Reportes Exportables**: Descarga de resúmenes analíticos para uso externo.
+- **Voz a Datos**: Interfaz minimalista con un solo botón de grabación.
+- **Carga Masiva**: Soporta `.xlsx` y `.csv`. La IA sugiere automáticamente el mapeo de columnas si los nombres no coinciden exactamente.
+- **Corrector de Ambigüedad**: Si la IA encuentra que un producto puede ser varios, se le pide al usuario que elija de una lista sugerida mediante Fuzzy Match.
+
+## 📊 Módulo de Gestión y Auditoría
+Panel administrativo para el dueño del negocio.
+- **CRUD Paginado**: Edición de miles de registros sin degradar el rendimiento del navegador.
+- **Auditoría IA**: Escaneo periódico de la base de datos para detectar inconsistencias (ej: precios sospechosamente bajos para una categoría).
+
+## 📈 Módulo de Dashboards BI
+Visualizaciones potentes para la toma de decisiones.
+- **Ventas Reales vs Proyectadas**.
+- **Top 5 Productos más rentables**.
+- **Mapa de calor de ventas por ubicación**.

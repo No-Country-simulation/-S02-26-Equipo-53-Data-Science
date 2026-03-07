@@ -1,26 +1,47 @@
-# 🛠️ Guía de Desarrollo e Instalación
+# 🛠️ Guía de Ingeniería y DevOps
 
-Instrucciones detalladas para configurar el entorno de desarrollo y contribuir al proyecto.
+Instrucciones avanzadas para el mantenimiento y despliegue del ecosistema DATAMARK.
 
-## 📋 Requisitos Previos
-- Python 3.10+
-- Acceso a una base de datos PostgreSQL (Aiven preferido).
-- API Key de Google Gemini.
+## 📦 Stack de Desarrollo
+- **Lenguaje**: Python 3.10.12
+- **Framework Web**: Streamlit 1.40.1
+- **Driver DB**: `psycopg2-binary`
+- **NLP**: `google-generativeai` 0.8.3
 
-## 🛠️ Configuración Loclal
-1. **Clonar**: `git clone [REPO_URL]`
-2. **Entorno**: `python -m venv env`
-3. **Activar**:
-   - Win: `.\env\Scripts\activate`
-   - Linux: `source env/bin/activate`
-4. **Dependencias**: `pip install -r requirements.txt`
-5. **Secretos**: Crear archivo `.env` basado en `.env.example`.
+## 🏗️ Flujo de CI/CD (Streamlit Cloud)
 
-## 🧪 Comandos Útiles
-- **Ejecutar App**: `streamlit run main.py`
-- **Limpiar BD**: `python scripts/clear_aiven_db.py`
-- **Poblar BD**: `python scripts/temp_old_db.py`
+```mermaid
+graph LR
+    Dev[Desarrollador] --> Git[GitHub develop2]
+    Git --> Webhook[Streamlit Cloud Hook]
+    Webhook --> Build[Build & Dependency Install]
+    Build --> Deploy[Producción Live]
+```
 
-## 🚦 Flujo de Git
-- Trabajar siempre sobre ramas de característica (`feature/nombre-de-la-mejora`).
-- Realizar Pull Requests hacia la rama `develop2` para revisión.
+### Configuración de Secretos
+Para que la aplicación funcione en la nube, es CRÍTICO configurar los secretos en Streamlit Cloud:
+
+```toml
+GEMINI_API_KEY = "tu_llave"
+DB_HOST = "tu_host_aiven"
+DB_NAME = "defaultdb"
+DB_USER = "avnadmin"
+DB_PASS = "tu_password"
+DB_PORT = "12345"
+```
+
+## 🚨 Troubleshooting Común
+
+| Error | Causa Probable | Solución |
+| :--- | :--- | :--- |
+| `ConnectionRefusedError` | IP no autorizada en Aiven. | Agregar `0.0.0.0/0` en el firewall de Aiven (solo para desarrollo). |
+| `NLP Extraction Error` | API Key expirada o cuota excedida. | Verificar cuota en Google AI Studio. El sistema intentará fallback automáticamente. |
+| `St.data_editor type error` | Tipos NumPy en base de datos. | Usar `.item()` para convertir a Python nativo antes de `INSERT`. |
+
+## 🧪 Comandos de Limpieza
+```bash
+# Limpiar caché de Streamlit
+streamlit cache clear
+# Resetear base de datos (USAR CON PRECAUCIÓN)
+python scripts/clear_aiven_db.py
+```
