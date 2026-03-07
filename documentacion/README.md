@@ -31,31 +31,31 @@ La misión de DATAMARK se resume en cuatro pilares fundamentales:
 A continuación, se presenta la visión holística de la orquestación del sistema:
 
 ```mermaid
-graph LR
-    subgraph "Entrada Multimodal"
+graph TD
+    subgraph IN ["Ingesta de Datos"]
         A[Dictado por Voz]
         B[Carga Excel/CSV]
         C[Formuario Manual]
     end
 
-    subgraph "Capa de Inteligencia"
+    subgraph IQ ["Motor de Inteligencia"]
         D{Orquestador AI}
         E[Gemini API]
         F[Fuzzy Filter]
     end
 
-    subgraph "Capa de Datos"
+    subgraph DB ["Capa de Datos"]
         G[(RAW Layer)]
         H((ETL Process))
         I[(Warehouse Layer)]
     end
 
-    subgraph "Consumo"
+    subgraph OUT ["Interfáz de Salida"]
         J[Reporting BI]
         K[CRUD Admin]
     end
 
-    A & B & C --> D
+    IN --> D
     D <--> E
     D --> F
     F --> G
@@ -63,6 +63,11 @@ graph LR
     H --> I
     I --> J
     G <--> K
+
+    style IQ fill:#f9f,stroke:#333,stroke-width:2px
+    style DB fill:#bbf,stroke:#333,stroke-width:2px
+    style IN fill:#dfd,stroke:#333,stroke-width:2px
+    style OUT fill:#ffd,stroke:#333,stroke-width:2px
 ```
 
 ---
@@ -70,13 +75,13 @@ graph LR
 ## 📂 Recursos de Profundización
 Haz click en los enlaces para explorar los detalles técnicos de cada componente:
 
-| Módulo | Descripción Técnica | Documento |
-| :--- | :--- | :--- |
-| **Arquitectura** | Detalle de capas, diagramas de secuencia e infraestructura. | [Ver más ➔](arquitectura.md) |
-| **Ingeniería de Datos** | Modelado Star Schema, disparadores PL/pgSQL y esquemas. | [Ver más ➔](base_de_datos.md) |
-| **Inteligencia Artificial** | Prompt engineering, fallback de modelos y lógica NLP. | [Ver más ➔](ia_nlp.md) |
-| **Funcionalidades** | Desglose de submódulos de ingesta, auditoría y BI. | [Ver más ➔](funcionalidades.md) |
-| **Guía de Desarrollo** | Setup de entorno, DevOps y Troubleshooting. | [Ver más ➔](guia_desarrollo.md) |
+| | Módulo | Descripción Técnica | Documentación |
+| :---: | :--- | :--- | :--- |
+| 🏗️ | **Arquitectura** | Detalle de capas, diagramas de secuencia e infraestructura. | [Explorar ➔](arquitectura.md) |
+| 🗄️ | **Ingeniería de Datos** | Modelado Star Schema, disparadores PL/pgSQL y esquemas. | [Explorar ➔](base_de_datos.md) |
+| 🤖 | **Inteligencia Artificial** | Prompt engineering, fallback de modelos y lógica NLP. | [Explorar ➔](ia_nlp.md) |
+| 🚀 | **Funcionalidades** | Desglose de submódulos de ingesta, auditoría y BI. | [Explorar ➔](funcionalidades.md) |
+| 🛠️ | **Guía de Desarrollo** | Setup de entorno, DevOps y Troubleshooting. | [Explorar ➔](guia_desarrollo.md) |
 
 ---
 
@@ -98,6 +103,7 @@ Para poner en marcha la infraestructura de documentación y desarrollo:
 - **Consistencia**: Uso de nomenclatura técnica en inglés para código y español para explicaciones.
 
 ---
-<p align="center">
-  Hecho con ❤️ por el equipo de DATAMARK
-</p>
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Hecho_con_❤️_por-DATAMARK_Team-eb4034?style=for-the-badge" alt="Footer Badge">
+</div>
