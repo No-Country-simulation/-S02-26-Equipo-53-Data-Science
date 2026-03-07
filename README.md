@@ -6,6 +6,9 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-336791?style=flat-square&logo=postgresql&logoColor=white)
 ![Aiven](https://img.shields.io/badge/Aiven-Managed_DB-ff3366?style=flat-square&logo=aiven&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=flat-square&logo=google&logoColor=white)
+![Deploy](https://img.shields.io/badge/Deploy-Streamlit_Community_Cloud-FF4B4B?style=flat-square&logo=streamlit)
+![Status](https://img.shields.io/badge/Status-Production-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.0-blue?style=flat-square)
 
 ---
 
