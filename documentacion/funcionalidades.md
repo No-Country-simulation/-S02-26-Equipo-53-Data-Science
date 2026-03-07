@@ -1,30 +1,63 @@
-# 🚀 Funcionalidades y Módulos
+# 🚀 Funcionalidades y Capacidades
 
-DATAMARK está compuesto por módulos especializados que cubren todo el espectro de la gestión de un negocio.
+<p align="center">
+  <img src="https://img.shields.io/badge/Estado-Producción-brightgreen?style=flat-square" alt="Estado">
+  <img src="https://img.shields.io/badge/Interactividad-Alta-orange?style=flat-square" alt="Interactividad">
+  <img src="https://img.shields.io/badge/Escalabilidad-Total-blue?style=flat-square" alt="Escalabilidad">
+</p>
 
-## 🎙️ Módulo de Ingesta Inteligente
-Este módulo es la puerta de entrada principal de datos.
+## 🎨 Visión General
+DATAMARK no es solo un registrador de datos; es un asistente de negocio proactivo. Cada módulo ha sido diseñado pensando en la eficiencia operativa y la claridad visual.
+
+---
+
+## 🎙️ Ingesta Inteligente (Smart Ingestion)
+Es el componente estrella que elimina la barrera de entrada tecnológica para el usuario.
 
 ```mermaid
-graph TD
-    V[Voz] --> AI[Extracción AI]
-    E[Excel] --> M[Mapeo de Columnas]
-    Man[Manual] --> F[Formulario]
-    AI & M & F --> Vld[Validación de Negocio]
-    Vld --> P[Inserción BD]
+graph LR
+    V[Voz] --> AI[Extraer Entidades]
+    E[Excel] --> M[Mapear Columnas]
+    Man[Manual] --> F[Insertar Directo]
+    
+    AI --> Match{¿Producto Existe?}
+    Match -->|Sí| OK[Confirmar Venta]
+    Match -->|No| Sug[Sugerencias Fuzzy]
 ```
 
-- **Voz a Datos**: Interfaz minimalista con un solo botón de grabación.
-- **Carga Masiva**: Soporta `.xlsx` y `.csv`. La IA sugiere automáticamente el mapeo de columnas si los nombres no coinciden exactamente.
-- **Corrector de Ambigüedad**: Si la IA encuentra que un producto puede ser varios, se le pide al usuario que elija de una lista sugerida mediante Fuzzy Match.
+### Características Clave:
+- **Detección Dinámica**: Identifica automáticamente si lo que el usuario dice es una venta o un movimiento de inventario.
+- **Mapeo Automático**: Durante la carga masiva, la IA predice qué columna del Excel del usuario se refiere al "Precio" o "Producto", incluso con nombres de columna diferentes.
 
-## 📊 Módulo de Gestión y Auditoría
-Panel administrativo para el dueño del negocio.
-- **CRUD Paginado**: Edición de miles de registros sin degradar el rendimiento del navegador.
-- **Auditoría IA**: Escaneo periódico de la base de datos para detectar inconsistencias (ej: precios sospechosamente bajos para una categoría).
+---
 
-## 📈 Módulo de Dashboards BI
-Visualizaciones potentes para la toma de decisiones.
-- **Ventas Reales vs Proyectadas**.
-- **Top 5 Productos más rentables**.
-- **Mapa de calor de ventas por ubicación**.
+## 🛠️ Gestión Transaccional y Auditoría
+Un panel de control robusto para la supervisión diaria.
+
+| Función | Herramienta | Beneficio |
+| :--- | :--- | :--- |
+| **CRUD Directo** | `st.data_editor` | Edición masiva con un solo clic. |
+| **Paginación Dinámica** | SQL `LIMIT/OFFSET` | Navegación fluida en miles de registros. |
+| **Auditoría IA** | Gemini Scan | Detección automática de anomalías de precios. |
+
+---
+
+## 📈 Power Dashboards (BI)
+Visualización de alto impacto para la toma de decisiones basada en datos, no en intuiciones.
+
+```mermaid
+pie title Distribución de Ventas por Categoría
+    "Ropa" : 45
+    "Calzado" : 35
+    "Accesorios" : 20
+```
+
+### KPIs Soportados:
+- **Revenue Diario/Semanal/Mensual**.
+- **Churn Rate de Clientes**.
+- **Stock de Seguridad**: Alertas automáticas cuando un producto baja de cierto umbral.
+- **Captación**: Análisis de qué canales (Voz vs Manual) son más efectivos.
+
+---
+> [!TIP]
+> Puedes extender las capacidades del dashboard agregando consultas SQL personalizadas en `modules/dashboard/dashboard_logic.py`.

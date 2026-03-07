@@ -1,64 +1,82 @@
 # 🏗️ Arquitectura de la Solución
 
-DATAMARK implementa una arquitectura desacoplada basada en el principio de separación de responsabilidades (SoC), utilizando Python como orquestador central.
+<p align="center">
+  <img src="https://img.shields.io/badge/Capa-Frontend-FF4B4B?style=flat-square&logo=streamlit" alt="Frontend">
+  <img src="https://img.shields.io/badge/Capa-Backend-3776ab?style=flat-square&logo=python" alt="Backend">
+  <img src="https://img.shields.io/badge/Capa-Cómputo-4285F4?style=flat-square&logo=google-cloud" alt="AI">
+</p>
 
-## 📐 Vista de Alto Nivel
+## 🗺️ Introducción Arquitectónica
+La arquitectura de DATAMARK se basa en la **Separación de Responsabilidades (SoC)**. Hemos diseñado un sistema donde el flujo de información es unidireccional y predecible, minimizando los efectos secundarios en la base de datos transaccional.
+
+---
+
+## 📐 Topología de Capas
 
 ```mermaid
 graph TB
-    subgraph Cliente ["Capa de Presentación (Streamlit)"]
-        Landing["Landing Page"]
-        Ingesta["Módulo de Ingesta"]
-        Dash["Dashboard BI"]
+    subgraph "Nube (Public Cloud)"
+        S[Streamlit Community Cloud]
+        A[Aiven PostgreSQL Managed]
+        G[Google Gemini API]
     end
 
-    subgraph Logica ["Capa de Aplicación (Python)"]
-        Orq["Orquestador de Módulos"]
-        AI["Motor NLP (Gemini)"]
-        Fuzzy["Motor de Match (TheFuzz)"]
-        Valid["Validación de Negocio"]
+    subgraph "Core del Proyecto"
+        Logic[Lógica de Negocio / Python]
+        Modules[Módulos / Micro-Apps]
+        Libs[Librerías / Shared Core]
     end
 
-    subgraph Persistencia ["Capa de Datos (PostgreSQL)"]
-        RawDB[("Esquema RAW (OLTP)")]
-        StgDB[("Esquema Staging")]
-        WhDB[("Esquema Warehouse (OLAP)")]
-    end
-
-    Cliente <--> Logica
-    Logica <--> Persistencia
+    S <--> Logic
+    Logic <--> A
+    Logic <--> G
+    Logic --- Modules
+    Logic --- Libs
 ```
 
-## 🔄 Ciclo de Vida de una Venta
+---
 
-El proceso desde que el usuario dicta una venta hasta que aparece en el dashboard analítico:
+## 🔄 Estados del Sistema
+El orquestador de Streamlit gestiona el ciclo de vida de la aplicación mediante un motor de estados finito (Finite State Machine) simplificado en el `state_manager.py`.
 
 ```mermaid
-sequenceDiagram
-    participant U as Usuario
-    participant S as Streamlit (UI)
-    participant G as Gemini API
-    participant P as PostgreSQL (Raw)
-    participant W as PostgreSQL (WH)
-
-    U->>S: Dicta: "Vendí 2 casacas azules"
-    S->>G: Envía audio/texto
-    G-->>S: Retorna JSON estructurado
-    S->>P: Validación de stock (Trigger)
-    alt Stock Suficiente
-        P-->>S: Confirmación de venta
-        S->>U: Notifica "Venta Exitosa"
-    else Stock Insuficiente
-        P-->>S: Error de integridad
-        S->>U: Notifica "Error: Sin Stock"
-    end
-    Note over P,W: Proceso ETL (Diferido)
-    P->>W: Migración a Fact_Ventas
+stateDiagram-v2
+    [*] --> Inactivo
+    Inactivo --> Escuchando: Usuario presiona 'Grabar'
+    Escuchando --> Procesando: Buffer de Audio -> API
+    Procesando --> Validando: Recepción de JSON extracted
+    Validando --> Confirmacion: Fuzzy Match completado
+    Confirmacion --> Insercion: Usuario aprueba
+    Insercion --> [*]: Venta registrada
+    
+    Procesando --> Error: Timeout / API Fail
+    Validando --> Error: Ambigüedad Crítica
+    Error --> Inactivo: Reset / Retry
 ```
 
-## 🛠️ Stack Tecnológico Interno
+---
 
-- **Frontend**: Streamlit 1.40+ con componentes personalizados para grabación de audio.
-- **Backend**: Python 3.10+ utilizando `psycopg2` para interactuar con la base de datos de manera determinista.
-- **IA**: Modelos Gemini (Flash 1.5, 2.5, 3.1) con sistema de fallback automático.
-- **Data**: Aiven PostgreSQL 16 con aislamiento de esquemas.
+## 🔧 Componentes de Software
+
+### 1. Orquestador de Módulos
+Localizado en `modules/[nombre_modulo]/app.py`. Es el encargado de inicializar los componentes de UI y llamar a los servicios de backend correspondientes.
+
+### 2. Capa de Servicios
+Contiene la lógica pesada de interacción externa:
+- **`db_service.py`**: Adaptadores SQL y validaciones deterministas.
+- **`extraction_service.py`**: Interfaz con el LLM y lógica de reintentos.
+
+### 3. Shared Libs (`libs/`)
+- **`db_connection.py`**: Implementa el patrón Singleton para asegurar una única gestión del pool de conexiones a Aiven.
+- **`logger.py`**: Sistema de trazas jerárquico para auditoría en tiempo real.
+
+---
+
+## 🧪 Estrategia de Estabilidad
+Para garantizar la máxima disponibilidad, implementamos:
+- **Fallback de Modelos**: Descenso gradual de Gemini 3.1 -> 1.5 si se detectan cuotas excedidas.
+- **Circuit Breaker**: Si la base de datos no responde, la aplicación entra en modo 'Solo Lectura' sobre el caché local de sesión.
+
+---
+> [!TIP]
+> Puedes encontrar más detalles sobre el comportamiento de la IA en la sección [Inteligencia Artificial](ia_nlp.md).
