@@ -106,7 +106,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
     if st.session_state.voice_state == "processing":
         with st.status("🔮 Gemini está interpretando tu pedido...", expanded=False) as status:
             logSequence("Procesando audio/texto con Gemini")
-            if st.session_state.get('voice_is_inventory', False):
+            if is_inventory:
                 res = extract_inventory_data(st.session_state[t_key])
                 if "data" in res:
                     logInfo(f"IA extrajo {len(res['data'])} items de inventario")
@@ -194,7 +194,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
 
     # --- UI de Confirmación (Resultados con Validación) ---
     if st.session_state.voice_state == "reviewing" and st.session_state.voice_extracted_items:
-        if st.session_state.get('voice_is_inventory', False):
+        if is_inventory:
             st.markdown("### 📦 Edición de Nuevo Inventario")
             st.caption("Verifica las categorías, precios y completa las tallas antes de enviarlos a Raw.")
             
@@ -265,7 +265,7 @@ def voice_input_component(key="voice_input", language="es-ES"):
         
             for i, item in enumerate(st.session_state.voice_extracted_items):
                 with st.container(border=True):
-                    if item["status"] == "Match Encontrado":
+                    if item.get("status") == "Match Encontrado":
                         # --- Header de la Card ---
                         cols_h = st.columns([0.8, 0.2])
                         with cols_h[0]:
