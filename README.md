@@ -28,7 +28,6 @@
 > 🌐 **Prueba la Aplicación en Vivo**: [DATAMARK (Streamlit Community Cloud)](https://datamark-analytics.streamlit.app/Ingesta_Ventas)
 
 ##  Screenshots de la Plataforma
-**(Reemplaza las rutas locales con las imágenes reales cuando las captures)*.*
 
 | Landing Page | Ingesta de Datos (NLP & Excel) |
 |:---:|:---:|
