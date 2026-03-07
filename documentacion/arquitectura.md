@@ -11,47 +11,24 @@ La arquitectura de DATAMARK se basa en la **Separación de Responsabilidades (So
 ---
 
 ## 📐 Topología de Capas
-
-```mermaid
-graph TB
-    subgraph "Nube (Public Cloud)"
-        S[Streamlit Community Cloud]
-        A[Aiven PostgreSQL Managed]
-        G[Google Gemini API]
-    end
-
-    subgraph "Core del Proyecto"
-        Logic[Lógica de Negocio / Python]
-        Modules[Módulos / Micro-Apps]
-        Libs[Librerías / Shared Core]
-    end
-
-    S <--> Logic
-    Logic <--> A
-    Logic <--> G
-    Logic --- Modules
-    Logic --- Libs
-```
+El sistema opera sobre una infraestructura 100% cloud:
+1.  **Presentación**: Streamlit Community Cloud (Frontend reactivo).
+2.  **Cómputo**: Python Business Logic + Google Gemini API (NLP).
+3.  **Persistencia**: Aiven PostgreSQL Managed (Storage & ETL).
 
 ---
 
 ## 🔄 Estados del Sistema
-El orquestador de Streamlit gestiona el ciclo de vida de la aplicación mediante un motor de estados finito (Finite State Machine) simplificado en el `state_manager.py`.
+El orquestador gestiona el ciclo de vida mediante los siguientes estados:
 
-```mermaid
-stateDiagram-v2
-    [*] --> Inactivo
-    Inactivo --> Escuchando: Usuario presiona 'Grabar'
-    Escuchando --> Procesando: Buffer de Audio -> API
-    Procesando --> Validando: Recepción de JSON extracted
-    Validando --> Confirmacion: Fuzzy Match completado
-    Confirmacion --> Insercion: Usuario aprueba
-    Insercion --> [*]: Venta registrada
-    
-    Procesando --> Error: Timeout / API Fail
-    Validando --> Error: Ambigüedad Crítica
-    Error --> Inactivo: Reset / Retry
-```
+*   **[Inactivo]** ➔ Usuario presiona 'Grabar'
+*   **[Escuchando]** ➔ Captura de buffer ➔ **[Procesando]**
+*   **[Procesando]** ➔ Gemini API Extract ➔ **[Validando]**
+*   **[Validando]** ➔ Fuzzy Match de productos ➔ **[Confirmación]**
+*   **[Confirmación]** ➔ Aprobación de usuario ➔ **[Inserción]**
+*   **[Inserción]** ➔ SQL Execute ➔ **[Finalizado]**
+
+*En caso de fallo en cualquier punto, el sistema retorna a **[Inactivo]** con una notificación de error.*
 
 ---
 

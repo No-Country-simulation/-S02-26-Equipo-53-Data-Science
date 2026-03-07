@@ -10,19 +10,14 @@ DATAMARK no es solo un registrador de datos; es un asistente de negocio proactiv
 
 ---
 
-## 🎙️ Ingesta Inteligente (Smart Ingestion)
-Es el componente estrella que elimina la barrera de entrada tecnológica para el usuario.
+## 🎙️ Tipos de Ingesta Inteligente
+Soportamos múltiples canales para asegurar que ningún dato se pierda:
 
-```mermaid
-graph LR
-    V[Voz] --> AI[Extraer Entidades]
-    E[Excel] --> M[Mapear Columnas]
-    Man[Manual] --> F[Insertar Directo]
-    
-    AI --> Match{¿Producto Existe?}
-    Match -->|Sí| OK[Confirmar Venta]
-    Match -->|No| Sug[Sugerencias Fuzzy]
-```
+*   **Canal Audio**: Procesamiento continuo de voz a datos.
+*   **Canal Masivo**: Inyección de lotes históricos vía Excel/CSV.
+*   **Canal Admin**: Formularios de alta velocidad para ajustes rápidos.
+
+---
 
 ### Características Clave:
 - **Detección Dinámica**: Identifica automáticamente si lo que el usuario dice es una venta o un movimiento de inventario.
@@ -42,14 +37,13 @@ Un panel de control robusto para la supervisión diaria.
 ---
 
 ## 📈 Power Dashboards (BI)
-Visualización de alto impacto para la toma de decisiones basada en datos, no en intuiciones.
+Visualización de KPIs para la toma de decisiones:
 
-```mermaid
-pie title Distribución de Ventas por Categoría
-    "Ropa" : 45
-    "Calzado" : 35
-    "Accesorios" : 20
-```
+*   **Ventas por Categoría**: Comparativa dinámica (Eje: Ropa 45%, Calzado 35%, Accesorios 20%).
+*   **Revenue Temporal**: Seguimiento de ingresos diarios y mensuales.
+*   **Balance de Inventario**: Alertas de stock crítico.
+
+---
 
 ### KPIs Soportados:
 - **Revenue Diario/Semanal/Mensual**.

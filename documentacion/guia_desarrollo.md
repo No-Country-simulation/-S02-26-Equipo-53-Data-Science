@@ -5,23 +5,15 @@
 ![CICD](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=flat-square&logo=github-actions)
 
 
-## 🏗️ Flujo de Entrega Continua
-La estabilidad del proyecto se basa en un flujo de despliegue automatizado y predecible.
+## 🏗️ Flujo de Entrega Continua (CI/CD)
+El proceso de despliegue sigue una ruta lineal y segura:
 
-```mermaid
-graph LR
-    Local[Desarrollo Local] -->|Push| GH[GitHub /develop2]
-    GH -->|Webhook| SC[Streamlit Cloud]
-    SC -->|Build| Prod[Producción Live]
-    
-    subgraph "Pruebas"
-        T1[Linter]
-        T2[DB Connection Test]
-    end
-    
-    GH --- T1
-    T1 --- T2
-```
+1.  **Desarrollo**: Cambios locales en rama de trabajo.
+2.  **Validación**: Push a GitHub (rama `develop2`) -> Ejecución de Linters y Tests de Conexión.
+3.  **Despliegue**: Webhook automático a Streamlit Cloud.
+4.  **Producción**: Aplicación actualizada y disponible para el usuario final.
+
+---
 
 ---
 

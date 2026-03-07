@@ -21,47 +21,17 @@ En DATAMARK, el dato nace en un entorno ruidoso (voz del usuario) y viaja a trav
 
 ---
 
-## 📐 Diagrama de Entidad-Relación (Warehouse)
-Optimizado para análisis bajo el modelo Star Schema.
+## 📐 Modelo de Datos (Esquema Estrella)
+El Warehouse está organizado para optimizar consultas analíticas:
 
-```mermaid
-erDiagram
-    FACT_VENTAS {
-        int id_venta PK
-        date id_fecha FK
-        int id_cliente FK
-        int id_producto FK
-        int id_medio_pago FK
-        int cantidad
-        decimal total_venta
-    }
-    DIM_PRODUCTO {
-        int id_producto PK
-        string producto
-        string categoria
-        decimal precio_venta
-    }
-    DIM_CLIENTE {
-        int id_cliente PK
-        string nombre_cliente
-        string ubicacion
-    }
-    DIM_FECHA {
-        date id_fecha PK
-        int anio
-        int mes
-        string nombre_mes
-    }
-    DIM_MEDIO_PAGO {
-        int id_medio_pago PK
-        string medio_pago
-    }
+*   **Hechos (FACT_VENTAS)**: Registro central de transacciones (id, fecha, cliente, producto, medio_pago, cantidad, total).
+*   **Dimensiones (DIM)**:
+    *   **Productos**: Categorías y precios base.
+    *   **Clientes**: Nombres y ubicaciones.
+    *   **Calendario**: Jerarquías de tiempo (Año, Mes, Día).
+    *   **Pagos**: Métodos de transacción.
 
-    FACT_VENTAS }|--|| DIM_PRODUCTO : "contiene"
-    FACT_VENTAS }|--|| DIM_CLIENTE : "pertenece a"
-    FACT_VENTAS }|--|| DIM_FECHA : "registrado en"
-    FACT_VENTAS }|--|| DIM_MEDIO_PAGO : "pagado con"
-```
+---
 
 ---
 

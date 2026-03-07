@@ -10,20 +10,18 @@ No utilizamos la IA solo como una herramienta de chat; es el **motor de parsing 
 
 ---
 
-## ⚙️ Arquitectura del Pipeline NLP
+## ⚙️ Pipeline de Procesamiento NLP
+Flujo lógico de la inteligencia en DATAMARK:
 
-```mermaid
-graph TD
-    A[Voz del Usuario] -->|WAV Buffer| B(Transcripción Directa)
-    B --> C{Context Awareness}
-    C -->|Prompt Ingesta| D[Gemini 3.1 Flash]
-    C -->|Prompt Auditoría| D
-    D --> E[JSON Crudo]
-    E --> F{Fuzzy Comparator}
-    F -->|Match > 80%| G[Sugerencia Automática]
-    F -->|Match < 80%| H[Flag de Ambigüedad]
-    G & H --> I[Validación Humana en UI]
-```
+1.  **Entrada**: Audio WAV o texto informal del usuario.
+2.  **Traducción**: El LLM (Gemini) extrae entidades estructuradas (JSON).
+3.  **Refinamiento**: El comparador Fuzzy cruza los datos con el inventario real.
+4.  **Decisión**: 
+    *   *Match > 80%*: Vinculación automática.
+    *   *Match < 80%*: Solicitud de aclaración en UI.
+5.  **Persistencia**: Confirmación final y escritura SQL.
+
+---
 
 ---
 
